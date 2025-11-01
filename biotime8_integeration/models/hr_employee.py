@@ -4,8 +4,9 @@ from odoo import models, fields, api
 import json
 import requests
 # from datetime import datetime
-from datetime import datetime, timedelta
 import pytz
+from datetime import datetime, timedelta
+from odoo.exceptions import UserError
 
 
 class Employee(models.Model):
@@ -33,7 +34,7 @@ class Employee(models.Model):
             'name': 'Late Check-ins',
             'res_model': 'hr.late.checkin',
             'domain': [('employee_id', '=', self.id)],
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'target': 'current',
         }
 
@@ -83,64 +84,233 @@ class Employee(models.Model):
                         'date': single_date,
                     })
 
+    # def load_punches(self, punch_from, punch_to):
+    #     for rec in self:
+    #         # Fetch the authentication record
+    #         auth_rec = self.env['biotime.connection'].search([('is_active', '=', True)], limit=1)
+    #         url = f"http://172.20.10.11/iclock/api/transactions/?emp_code={rec.pin}&page_size=100&start_time={punch_from}&end_time={punch_to}"
+    #         headers = {
+    #             "Content-Type": "application/json",
+    #             "Authorization": auth_rec.auth_code,
+    #         }
+    #         response = requests.get(url, headers=headers)
+    #         list_url = response.json()
+    #         punches = list_url["data"]
+    #
+    #         # Define time zones
+    #         api_timezone = self.env.company.timezone or 'UTC'
+    #         api_timezone = pytz.timezone(api_timezone)  # API time zone
+    #         odoo_timezone = pytz.timezone('UTC')  # Odoo server time zone, default to UTC
+    #
+    #         # Convert punches to a list of tuples (datetime, punch)
+    #         punch_data = []
+    #         for punch in punches:
+    #             punch_time = datetime.strptime(punch['punch_time'], '%Y-%m-%d %H:%M:%S')
+    #             punch_time = api_timezone.localize(punch_time)  # Localize to API timezone
+    #             punch_time = punch_time.astimezone(odoo_timezone)  # Convert to Odoo server timezone
+    #             punch_time = punch_time.replace(tzinfo=None)  # Make datetime naive
+    #             punch_data.append((punch_time, punch))
+    #
+    #         punch_data.sort()
+    #
+    #         # Get the employee's working schedule
+    #         working_schedule = rec.resource_calendar_id.attendance_ids
+    #
+    #         # Search for "weekend_replace" leave type
+    #         leave_type = self.env['hr.leave.type'].search([('weekend_replace', '=', True)], limit=1)
+    #         if not leave_type:
+    #             raise ValueError("Leave type 'weekend_replace' not found.")
+    #
+    #         # Get the list of night shift dates for the employee
+    #         night_shifts = self.env['hr.night.shift'].search([('employee_id', '=', rec.id)])
+    #         night_shift_dates = {shift.date for shift in night_shifts}
+    #
+    #         # Create a dictionary to store punches by date
+    #         punches_by_date = {}
+    #         for punch_time, punch in punch_data:
+    #             day = punch_time.date()
+    #             if day not in punches_by_date:
+    #                 punches_by_date[day] = []
+    #             punches_by_date[day].append(punch_time)
+    #
+    #         # Helper function to check if a day is a scheduled working day
+    #         def is_scheduled_workday(calendar, day):
+    #             weekday = day.weekday()
+    #             return any(att.dayofweek == str(weekday) for att in calendar)
+    #
+    #         # Process punches by day
+    #         for day, punches in sorted(punches_by_date.items()):
+    #             punches.sort()
+    #
+    #             is_night_shift_day = day in night_shift_dates
+    #             is_working_day = is_scheduled_workday(working_schedule, day)
+    #             next_day = day + timedelta(days=1)
+    #             has_next_day_punches = next_day in punches_by_date
+    #             next_day_punches = punches_by_date.get(next_day, [])
+    #
+    #             if is_working_day:
+    #                 # Handle punches and create attendance as per existing logic
+    #                 if len(punches) == 1:
+    #                     single_punch_time = punches[0]
+    #
+    #                     if is_night_shift_day:
+    #                         # Night shift day handling (single punch)
+    #                         day_start = datetime.combine(day, datetime.min.time())
+    #                         day_end = datetime.combine(day, datetime.min.time()) + timedelta(days=1) - timedelta(
+    #                             seconds=1)
+    #
+    #                         if single_punch_time < day_start or single_punch_time > day_end:
+    #                             continue
+    #
+    #                         max_punch_time = max(punches)
+    #                         if has_next_day_punches:
+    #                             min_punch_next_day = min(next_day_punches)
+    #                             if max_punch_time < min_punch_next_day:
+    #                                 self.env['hr.attendance'].create({
+    #                                     'employee_id': rec.id,
+    #                                     'check_in': max_punch_time,
+    #                                     'check_out': min_punch_next_day,
+    #                                     'is_night_shift': is_night_shift_day
+    #                                 })
+    #                         else:
+    #                             if max_punch_time < day_end:
+    #                                 self.env['hr.attendance'].create({
+    #                                     'employee_id': rec.id,
+    #                                     'check_in': max_punch_time,
+    #                                     'check_out': day_end,
+    #                                     'is_night_shift': is_night_shift_day
+    #                                 })
+    #                     else:
+    #                         # Handle single punch on a day shift day
+    #                         self.env['hr.attendance'].create({
+    #                             'employee_id': rec.id,
+    #                             'check_in': single_punch_time,
+    #                             'check_out': single_punch_time,
+    #                         })
+    #
+    #                 elif len(punches) > 1:
+    #                     first_punch_time = punches[0]
+    #                     last_punch_time = punches[-1]
+    #
+    #                     if is_night_shift_day:
+    #                         # Night shift handling (multiple punches)
+    #                         if has_next_day_punches:
+    #                             min_punch_next_day = min(next_day_punches)
+    #                             self.env['hr.attendance'].create({
+    #                                 'employee_id': rec.id,
+    #                                 'check_in': max(punches),
+    #                                 'check_out': min_punch_next_day,
+    #                                 'is_night_shift': is_night_shift_day
+    #                             })
+    #                         else:
+    #                             day_end = datetime.combine(day, datetime.min.time()) + timedelta(days=1) - timedelta(
+    #                                 seconds=1)
+    #                             self.env['hr.attendance'].create({
+    #                                 'employee_id': rec.id,
+    #                                 'check_in': max(punches),
+    #                                 'check_out': day_end,
+    #                                 'is_night_shift': is_night_shift_day
+    #                             })
+    #                     else:
+    #                         # Day shift handling (multiple punches)
+    #                         self.env['hr.attendance'].create({
+    #                             'employee_id': rec.id,
+    #                             'check_in': first_punch_time,
+    #                             'check_out': last_punch_time,
+    #                         })
+    #
+    #             else:
+    #                 # If punches occur outside of the working schedule, allocate "weekend_replace" leave
+    #                 if len(punches) > 0:  # Ensure there is at least one punch
+    #                     self.env['hr.leave.allocation'].create({
+    #                         'employee_id': rec.id,
+    #                         'holiday_status_id': leave_type.id,
+    #                         'number_of_days': 1,
+    #                         'name': f"Weekend Replace - {day}",
+    #                     })
+    #
+    #         # Additional validation to check for any erroneous records
+    #         self.env.cr.execute("""
+    #             DELETE FROM hr_attendance
+    #             WHERE check_out < check_in
+    #         """)
+
     def load_punches(self, punch_from, punch_to):
+
         for rec in self:
-            # Fetch the authentication record
+            # 🔹 Step 1: Fetch the active Biotime connection record
             auth_rec = self.env['biotime.connection'].search([('is_active', '=', True)], limit=1)
-            url = f"http://172.20.10.11/iclock/api/transactions/?emp_code={rec.pin}&page_size=100&start_time={punch_from}&end_time={punch_to}"
+            if not auth_rec or not auth_rec.auth_code:
+                raise UserError(
+                    "No active Biotime connection or missing authorization token. Please check Biotime settings.")
+
+            # 🔹 Step 2: Prepare URL and headers
+            url = (
+                f"http://172.20.10.11/iclock/api/transactions/"
+                f"?emp_code={rec.pin}&page_size=100&start_time={punch_from}&end_time={punch_to}"
+            )
+
             headers = {
                 "Content-Type": "application/json",
-                "Authorization": auth_rec.auth_code,
+                "Authorization": str(auth_rec.auth_code).strip(),
             }
-            response = requests.get(url, headers=headers)
-            list_url = response.json()
-            punches = list_url["data"]
 
-            # Define time zones
-            api_timezone = self.env.company.timezone or 'UTC'
-            api_timezone = pytz.timezone(api_timezone)  # API time zone
-            odoo_timezone = pytz.timezone('UTC')  # Odoo server time zone, default to UTC
+            # 🔹 Step 3: Perform API request safely
+            try:
+                response = requests.get(url, headers=headers, timeout=15)
+                response.raise_for_status()
+            except requests.exceptions.RequestException as e:
+                raise UserError(f"Failed to fetch punches from Biotime: {str(e)}")
 
-            # Convert punches to a list of tuples (datetime, punch)
+            # 🔹 Step 4: Parse JSON safely
+            try:
+                list_url = response.json()
+                punches = list_url.get("data", [])
+            except Exception as e:
+                raise UserError(f"Invalid response format from Biotime: {str(e)}")
+
+            if not punches:
+                continue  # no punches found for this employee
+
+            # 🔹 Step 5: Setup timezones
+            api_timezone = pytz.timezone(self.env.company.timezone or 'UTC')
+            odoo_timezone = pytz.timezone('UTC')
+
+            # 🔹 Step 6: Normalize punches
             punch_data = []
             for punch in punches:
-                punch_time = datetime.strptime(punch['punch_time'], '%Y-%m-%d %H:%M:%S')
-                punch_time = api_timezone.localize(punch_time)  # Localize to API timezone
-                punch_time = punch_time.astimezone(odoo_timezone)  # Convert to Odoo server timezone
-                punch_time = punch_time.replace(tzinfo=None)  # Make datetime naive
-                punch_data.append((punch_time, punch))
+                try:
+                    punch_time = datetime.strptime(punch['punch_time'], '%Y-%m-%d %H:%M:%S')
+                    punch_time = api_timezone.localize(punch_time).astimezone(odoo_timezone)
+                    punch_time = punch_time.replace(tzinfo=None)
+                    punch_data.append((punch_time, punch))
+                except Exception:
+                    continue  # skip invalid punch
 
             punch_data.sort()
 
-            # Get the employee's working schedule
+            # 🔹 Step 7: Gather employee data
             working_schedule = rec.resource_calendar_id.attendance_ids
-
-            # Search for "weekend_replace" leave type
             leave_type = self.env['hr.leave.type'].search([('weekend_replace', '=', True)], limit=1)
             if not leave_type:
-                raise ValueError("Leave type 'weekend_replace' not found.")
+                raise UserError("Leave type 'weekend_replace' not found.")
 
-            # Get the list of night shift dates for the employee
             night_shifts = self.env['hr.night.shift'].search([('employee_id', '=', rec.id)])
             night_shift_dates = {shift.date for shift in night_shifts}
 
-            # Create a dictionary to store punches by date
+            # 🔹 Step 8: Group punches by day
             punches_by_date = {}
             for punch_time, punch in punch_data:
                 day = punch_time.date()
-                if day not in punches_by_date:
-                    punches_by_date[day] = []
-                punches_by_date[day].append(punch_time)
+                punches_by_date.setdefault(day, []).append(punch_time)
 
-            # Helper function to check if a day is a scheduled working day
             def is_scheduled_workday(calendar, day):
                 weekday = day.weekday()
                 return any(att.dayofweek == str(weekday) for att in calendar)
 
-            # Process punches by day
+            # 🔹 Step 9: Process punches by day
             for day, punches in sorted(punches_by_date.items()):
                 punches.sort()
-
                 is_night_shift_day = day in night_shift_dates
                 is_working_day = is_scheduled_workday(working_schedule, day)
                 next_day = day + timedelta(days=1)
@@ -148,39 +318,32 @@ class Employee(models.Model):
                 next_day_punches = punches_by_date.get(next_day, [])
 
                 if is_working_day:
-                    # Handle punches and create attendance as per existing logic
                     if len(punches) == 1:
                         single_punch_time = punches[0]
-
                         if is_night_shift_day:
-                            # Night shift day handling (single punch)
                             day_start = datetime.combine(day, datetime.min.time())
                             day_end = datetime.combine(day, datetime.min.time()) + timedelta(days=1) - timedelta(
                                 seconds=1)
-
-                            if single_punch_time < day_start or single_punch_time > day_end:
-                                continue
-
-                            max_punch_time = max(punches)
-                            if has_next_day_punches:
-                                min_punch_next_day = min(next_day_punches)
-                                if max_punch_time < min_punch_next_day:
-                                    self.env['hr.attendance'].create({
-                                        'employee_id': rec.id,
-                                        'check_in': max_punch_time,
-                                        'check_out': min_punch_next_day,
-                                        'is_night_shift': is_night_shift_day
-                                    })
-                            else:
-                                if max_punch_time < day_end:
-                                    self.env['hr.attendance'].create({
-                                        'employee_id': rec.id,
-                                        'check_in': max_punch_time,
-                                        'check_out': day_end,
-                                        'is_night_shift': is_night_shift_day
-                                    })
+                            if day_start <= single_punch_time <= day_end:
+                                max_punch_time = max(punches)
+                                if has_next_day_punches:
+                                    min_punch_next_day = min(next_day_punches)
+                                    if max_punch_time < min_punch_next_day:
+                                        self.env['hr.attendance'].create({
+                                            'employee_id': rec.id,
+                                            'check_in': max_punch_time,
+                                            'check_out': min_punch_next_day,
+                                            'is_night_shift': True,
+                                        })
+                                else:
+                                    if max_punch_time < day_end:
+                                        self.env['hr.attendance'].create({
+                                            'employee_id': rec.id,
+                                            'check_in': max_punch_time,
+                                            'check_out': day_end,
+                                            'is_night_shift': True,
+                                        })
                         else:
-                            # Handle single punch on a day shift day
                             self.env['hr.attendance'].create({
                                 'employee_id': rec.id,
                                 'check_in': single_punch_time,
@@ -190,16 +353,14 @@ class Employee(models.Model):
                     elif len(punches) > 1:
                         first_punch_time = punches[0]
                         last_punch_time = punches[-1]
-
                         if is_night_shift_day:
-                            # Night shift handling (multiple punches)
                             if has_next_day_punches:
                                 min_punch_next_day = min(next_day_punches)
                                 self.env['hr.attendance'].create({
                                     'employee_id': rec.id,
                                     'check_in': max(punches),
                                     'check_out': min_punch_next_day,
-                                    'is_night_shift': is_night_shift_day
+                                    'is_night_shift': True,
                                 })
                             else:
                                 day_end = datetime.combine(day, datetime.min.time()) + timedelta(days=1) - timedelta(
@@ -208,10 +369,9 @@ class Employee(models.Model):
                                     'employee_id': rec.id,
                                     'check_in': max(punches),
                                     'check_out': day_end,
-                                    'is_night_shift': is_night_shift_day
+                                    'is_night_shift': True,
                                 })
                         else:
-                            # Day shift handling (multiple punches)
                             self.env['hr.attendance'].create({
                                 'employee_id': rec.id,
                                 'check_in': first_punch_time,
@@ -219,8 +379,7 @@ class Employee(models.Model):
                             })
 
                 else:
-                    # If punches occur outside of the working schedule, allocate "weekend_replace" leave
-                    if len(punches) > 0:  # Ensure there is at least one punch
+                    if punches:  # weekend punches
                         self.env['hr.leave.allocation'].create({
                             'employee_id': rec.id,
                             'holiday_status_id': leave_type.id,
@@ -228,7 +387,7 @@ class Employee(models.Model):
                             'name': f"Weekend Replace - {day}",
                         })
 
-            # Additional validation to check for any erroneous records
+            # 🔹 Step 10: Clean up invalid attendance records
             self.env.cr.execute("""
                 DELETE FROM hr_attendance
                 WHERE check_out < check_in

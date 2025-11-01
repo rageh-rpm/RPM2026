@@ -37,7 +37,7 @@
                         </group>
                     </group>
                     <field name="biotime_punches">
-                        <tree>
+                        <list>
                             <field name="id"/>
                             <field name="name"/>
                             <field name="emp_code"/>
@@ -46,16 +46,16 @@
                             <field name="punch_state_display"/>
                             <field name="verify_type_display"/>
                             <field name="terminal_alias"/>
-                        </tree>
+                        </list>
                     </field>
                 </page>
                 <page name="night_shit" string="Night Shift Days">
                     <button name="action_all_month" type="object" string="All Month" class="oe_highlight"/>
                     <field name="night_shift_ids">
-                        <tree editable="bottom">
+                        <list editable="bottom">
                             <field name="date"/>
                             <field name="notes"/>
-                        </tree>
+                        </list>
                     </field>
                 </page>
             </xpath>
@@ -67,12 +67,12 @@
         </field>
     </record>
 
-    <record id="view_employee_tree_inherit" model="ir.ui.view">
-        <field name="name">hr.employee.tree.inherit.load.punches</field>
+    <record id="view_employee_list_inherit" model="ir.ui.view">
+        <field name="name">hr.employee.list.inherit.load.punches</field>
         <field name="model">hr.employee</field>
         <field name="inherit_id" ref="hr.view_employee_tree"/>
         <field name="arch" type="xml">
-            <xpath expr="//tree" position="inside">
+            <xpath expr="//list" position="inside">
                 <header>
                     <button name="action_load_punches_wizard" type="object" string="Load Punches" class="btn-primary"/>
                 </header>
