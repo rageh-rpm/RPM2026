@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+<record id="view_employee_punches_wizard_form" model="ir.ui.view">
+    <field name="name">employee.punches.wizard.form</field>
+    <field name="model">employee.punches.wizard</field>
+    <field name="arch" type="xml">
+        <form string="Load Punches">
+            <sheet>
+                <group>
+                    <field name="employee_ids" widget="many2many_tags"/>
+                    <field name="date_from"/>
+                    <field name="date_to"/>
+                </group>
+                <footer>
+                    <button string="Confirm" type="object" name="action_confirm" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </sheet>
+        </form>
+    </field>
+</record>
+
+    </data>
+</odoo>

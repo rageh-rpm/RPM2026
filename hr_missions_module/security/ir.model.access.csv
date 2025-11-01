@@ -1,0 +1,14 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_hr_mission_employee,access.hr.mission.employee,model_hr_mission,group_hr_mission_employee,1,0,1,0
+access_hr_mission_manager,access.hr.mission.manager,model_hr_mission,group_hr_mission_manager,1,1,1,0
+access_hr_mission_sector_head,access.hr.mission.sector_head,model_hr_mission,group_hr_mission_sector_head,1,1,1,0
+access_hr_mission_hr,access.hr.mission.hr,model_hr_mission,group_hr_mission_hr,1,1,1,1
+access_hr_mission_finance,access.hr.mission.finance,model_hr_mission,group_hr_mission_finance,1,1,0,0
+access_hr_mission_allowance,access.hr.mission.allaowance,model_hr_mission_allowance,group_hr_mission_employee,1,0,0,0
+access_hr_mission_allowance_manager,access.hr.mission.allaowance.manager,model_hr_mission_allowance,group_hr_mission_hr,1,1,1,1
+access_hr_mission_type,access.hr.mission.type,model_hr_mission_type,group_hr_mission_employee,1,0,0,0
+access_hr_mission_type_manager,access.hr.mission.type.manager,model_hr_mission_type,group_hr_mission_hr,1,1,1,1
+access_hr_mission_transportation_type,access.hr.mission.type,model_hr_mission_transport_type,group_hr_mission_employee,1,0,0,0
+access_hr_mission_transportation_type_manager,access.hr.mission.type.manager,model_hr_mission_transport_type,group_hr_mission_hr,1,1,1,1
+access_hr_mission_accomodation_type,access.hr.mission.type,model_hr_mission_accommodation_type,group_hr_mission_employee,1,0,0,0
+access_hr_mission_accomodation_type_manager,access.hr.mission.type.manager,model_hr_mission_accommodation_type,group_hr_mission_hr,1,1,1,1

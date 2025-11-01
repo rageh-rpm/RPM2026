@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Action -->
+    <record id="action_hr_mission" model="ir.actions.act_window">
+        <field name="name">Business Missions</field>
+        <field name="res_model">hr.mission</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <div class="o_view_nocontent_smiling_face text-center">
+                <i class="fa fa-plane fa-3x mb-3" style="color: #875A7B;"></i>
+                <h3>No Missions Yet</h3>
+                <p class="text-muted">
+                    Start planning your business missions and track all expenses in one place.
+                </p>
+                <p>
+                    Create your first mission to get started with travel management.
+                </p>
+            </div>
+        </field>
+    </record>
+
+    <!-- Main Menu -->
+    <menuitem id="menu_hr_mission_root" name="✈️ Missions" sequence="10"
+              parent="hr.menu_hr_root" />
+
+    <!-- Sub Menus -->
+    <menuitem id="menu_hr_mission_all" name="All Missions" sequence="10"
+              parent="menu_hr_mission_root"
+              action="action_hr_mission"/>
+
+    <menuitem id="menu_hr_mission_my" name="My Missions" sequence="20"
+              parent="menu_hr_mission_root"
+              action="action_hr_mission"
+    />
+
+
+
+    <!-- List View -->
+    <record id="view_hr_mission_list" model="ir.ui.view">
+        <field name="name">hr.mission.list</field>
+        <field name="model">hr.mission</field>
+        <field name="arch" type="xml">
+            <list string="Business Missions">
+                <field name="name" string="Reference"/>
+                <field name="employee_id" string="Employee" widget="many2one_avatar_user"/>
+                <field name="department_id" string="Department"/>
+                <field name="type_id" string="Mission Type"/>
+                <field name="start_datetime" string="Start Date"/>
+                <field name="end_datetime" string="End Date"/>
+                <field name="duration_days" string="Duration (Days)"/>
+                <field name="grand_total" string="Total Amount"/>
+                <field name="company_currency_id" string="Currency"/>
+                <field name="state" string="Status" widget="badge" decoration-success="state == 'approved'" decoration-warning="state == 'paid'" decoration-danger="state == 'cancelled'" decoration-muted="state == 'draft'"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- Form View -->
+    <record id="view_hr_mission_form" model="ir.ui.view">
+        <field name="name">hr.mission.form</field>
+        <field name="model">hr.mission</field>
+        <field name="arch" type="xml">
+            <form string="Business Mission">
+                <header>
+                    <!-- Smart Status Bar -->
+
+                    <!-- Dynamic Action Buttons -->
+                    <button name="action_request_manager" type="object"
+                            string="📤 Submit for Approval"
+                            invisible="state != 'draft'"
+                            class="btn-primary oe_highlight"
+                            groups="hr_missions_module.group_hr_mission_employee"/>
+
+                    <button name="action_approve_manager" type="object"
+                            string="✅ Manager Approve"
+                            invisible="state != 'to_manager'"
+                            class="btn-success"
+                            groups="hr_missions_module.group_hr_mission_manager"/>
+
+                    <button name="action_approve_sector_head" type="object"
+                            string="✅ Sector Head Approve"
+                            invisible="state != 'to_sector_head'"
+                            class="btn-success"
+                            groups="hr_missions_module.group_hr_mission_sector_head"/>
+
+                    <button name="action_approve_hr" type="object"
+                            string="✅ HR Approve"
+                            invisible="state != 'to_hr'"
+                            class="btn-success"
+                            groups="hr_missions_module.group_hr_mission_hr"/>
+
+                    <button name="action_approve_finance" type="object"
+                            string="✅ Finance Approve"
+                            invisible="state != 'to_finance'"
+                            class="btn-success"
+                            groups="hr_missions_module.group_hr_mission_finance"/>
+
+                    <button name="action_set_paid" type="object"
+                            string="💰 Mark as Paid"
+                            invisible="state != 'approved'"
+                            class="btn-info"
+                            groups="hr_missions_module.group_hr_mission_finance"/>
+
+                    <button name="action_cancel" type="object"
+                            string="❌ Cancel"
+                            class="btn-secondary"
+                            invisible="state in ['paid', 'cancelled']"/>
+
+                    <button name="action_reset_to_draft" type="object"
+                            string="🔄 Reset to Draft"
+                            invisible="state not in ['cancelled', 'rejected']"
+                            class="btn-outline-secondary"
+                            groups="hr_missions_module.group_hr_mission_manager"/>
+                    <field name="state" widget="statusbar"
+                           statusbar_visible="draft,to_manager,to_sector_head,to_hr,to_finance,approved,paid,cancelled"
+                           />
+
+
+                </header>
+
+                <sheet>
+                    <!-- Basic Information -->
+                    <group string="📋 Mission Overview" >
+                        <group>
+                            <field name="employee_id" string="Assigned Employee" required="1"/>
+                            <field name="manager_id" string="Reporting Manager" />
+                            <field name="department_id" string="Department" />
+                        </group>
+                        <group>
+                            <field name="name" string="Mission ID" readonly="1" class="font-weight-bold"/>
+                            <field name="company_id"/>
+                            <field name="requested_by" string="Requested By" readonly="1"/>
+                        </group>
+
+                    </group>
+
+
+                    <!-- Mission Details -->
+                    <group string="🎯 Mission Details" >
+                        <group>
+                            <field name="type_id" string="Mission Type" required="1"/>
+                            <field name="company_currency_id" string="Currency" />
+
+                            <field name="scope" string="Mission Scope" required="1"/>
+                        </group>
+                        <group>
+                            <field name="start_datetime" string="Start Date &amp; Time" required="1"/>
+                            <field name="end_datetime" string="End Date &amp; Time" required="1"/>
+                            <field name="duration_days" string="Duration (Days)" readonly="1"/>
+                        </group>
+
+                    </group>
+
+                    <!-- Location Details -->
+                    <group>
+
+                        <group string="📍 Destination Details"  >
+                            <field name="country_id" required="scope != 'abroad'" invisible="scope != 'abroad'"/>
+                            <field name="state_id" string="State/Province" required="1" domain="[('country_id', '=', country_id)]"/>
+                            <field name="distance_km" string="Distance (KM)" readonly="1" invisible="scope != 'in_country'"/>
+                            <field name="fixed_fare" string="Fixed Fare" readonly="1" widget="monetary" invisible="scope != 'in_country'"/>
+                        </group>
+                        <group string="🎯 Mission Objectives" >
+                            <field name="mission_purpose" string="Purpose of Mission" required="1" />
+                            <field name="expected_outcomes" string="Expected Outcomes" />
+                        </group>
+                    </group>
+
+
+                    <!-- Mission Purpose -->
+
+
+                    <notebook>
+                        <page string="🏨 Accommodation &amp; 🚗 Transport">
+                            <group col="2">
+                                <group string="Accommodation">
+                                    <field name="accommodation" string="Accommodation Required"/>
+                                    <field name="accommodation_type_id" string="Accommodation Type" invisible="not accommodation"/>
+                                </group>
+                                <group string="Transportation">
+                                    <field name="transportation" string="Transportation Required"/>
+                                    <field name="transportation_type_id" string="Transportation Type" invisible="not transportation"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <page string="💰 Allowances &amp; Expenses">
+                            <field name="allowance_line_ids" string="Allowance Breakdown">
+                                <list editable="bottom" string="Allowances">
+                                    <field name="name" string="Description"/>
+                                    <field name="allowance_type" string="Type"/>
+                                    <field name="amount" string="Unit Amount" widget="monetary"/>
+                                    <field name="quantity" string="Qty"/>
+                                    <field name="total_amount" string="Total Amount" widget="monetary" readonly="1"/>
+                                </list>
+                            </field>
+                            <group class="oe_subtotal_footer">
+                                <field name="grand_total" string="Total Mission Cost" readonly="1" widget="monetary" class="oe_subtotal_footer_separator"/>
+                            </group>
+                        </page>
+
+                        <page string="📝 Additional Information">
+                            <group string="Mission Description">
+                                <field name="description" string="Additional Notes" nolabel="1"/>
+                            </group>
+                        </page>
+
+                        <page string="📋 Approval Trail" invisible="state == 'draft'">
+                            <group col="2" string="Approval History">
+                                <field name="approved_by_manager" readonly="1"/>
+                                <field name="approved_by_sector_head" readonly="1"/>
+                                <field name="approved_by_hr" readonly="1"/>
+                                <field name="approved_by_finance" readonly="1"/>
+                            </group>
+                            <field name="rejection_reason" readonly="1" invisible="state != 'rejected'" nolabel="1"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+
+            </form>
+        </field>
+    </record>
+</odoo>

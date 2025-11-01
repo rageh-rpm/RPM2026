@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_biotime8_integeration_biotime8_integeration,biotime8_integeration.biotime8_integeration,model_biotime_integeration,base.group_user,1,1,1,0
+access_biotime8_integeration_auth,biotime8_integeration.biotime8_auth,model_biotime_connection,base.group_user,1,1,1,1
+access_biotime8_integeration_punch,biotime8_integeration.biotime8_punch,model_biotime_punch,base.group_user,1,1,1,1
+access_night_shit,biotime8_integeration.night_shift_list,model_hr_night_shift,base.group_user,1,1,1,1
+access_punches_wiz,biotime8_integeration.punch_wiz,model_employee_punches_wizard,base.group_user,1,1,1,1
+access_punches_late,biotime8_integeration.punch_late,model_hr_late_checkin,base.group_user,1,1,1,1
+

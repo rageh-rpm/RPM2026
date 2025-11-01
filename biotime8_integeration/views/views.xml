@@ -1,0 +1,139 @@
+<odoo>
+    <data>
+        <!-- explicit list view definition -->
+        <record model="ir.ui.view" id="biotime8_integeration.list">
+            <field name="name">biotime8_integeration list</field>
+            <field name="model">biotime.integeration</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                    <button name="rec_print" type="object" string="Print Result" class="btn-primary"/>
+
+                </tree>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="biotime_auth_list">
+            <field name="name">biotime8_integeration list</field>
+            <field name="model">biotime.connection</field>
+            <field name="arch" type="xml">
+                <tree editable="top">
+                    <field name="name"/>
+                    <field name="password"/>
+                    <field name="auth_code"/>
+                    <field name="is_active"/>
+                    <button name="generate_auth" type="object" string="Auth!!!" class="btn-primary"/>
+
+                </tree>
+            </field>
+        </record>
+
+        <!-- actions opening views on models -->
+
+        <record model="ir.actions.act_window" id="biotime8_integeration_action_window">
+            <field name="name">biotime8_integeration window</field>
+            <field name="res_model">biotime.integeration</field>
+            <field name="view_mode">tree,form</field>
+        </record>
+
+        <record model="ir.actions.act_window" id="generate_auth_action_window">
+            <field name="name">biotime8_integeration window</field>
+            <field name="res_model">biotime.connection</field>
+            <field name="view_mode">tree</field>
+        </record>
+
+        <record id="inherit_hr_attendance_config_settings" model="ir.ui.view">
+            <field name="name">hr.attendance.config.settings.inherit.view</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="hr_attendance.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='overtime_settings']" position="after">
+                    <h2>Shift Settings</h2>
+                    <div class="row mt16 o_settings_container" name="shift_settings">
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane" title="Set the start and end times for day and night shifts.">
+                                <field name="day_shift_start"/>
+                                <field name="day_shift_end"/>
+                                <field name="night_shift_start"/>
+                                <field name="night_shift_end"/>
+                                <field name="timezone"/>
+                                <field name="day_ovt_end"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="day_shift_start" class="o_form_label">Day Shift Start Time</label>
+                                <div class="text-muted">
+                                    Specify the starting time for day shifts.
+                                </div>
+                                <label for="day_shift_end" class="o_form_label">Day Shift End Time</label>
+                                <div class="text-muted">
+                                    Specify the ending time for day shifts.
+                                </div>
+                                <label for="night_shift_start" class="o_form_label">Night Shift Start Time</label>
+                                <div class="text-muted">
+                                    Specify the starting time for night shifts.
+                                </div>
+                                <label for="night_shift_end" class="o_form_label">Night Shift End Time</label>
+                                <div class="text-muted">
+                                    Specify the ending time for night shifts.
+                                </div>
+                                <label for="timezone" class="o_form_label">Timezone</label>
+                                <div class="text-muted">
+                                    Specify the Timezone.
+                                </div>
+
+                                 <label for="day_ovt_end" class="o_form_label">Timezone</label>
+                                <div class="text-muted">
+                                    Time to Start Night OVT.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+
+
+        <record id="view_hr_late_checkin_tree" model="ir.ui.view">
+            <field name="name">hr.late.checkin.tree</field>
+            <field name="model">hr.late.checkin</field>
+            <field name="arch" type="xml">
+                <tree>
+                    <field name="employee_id"/>
+                    <field name="date"/>
+                    <field name="late_duration"/>
+                </tree>
+            </field>
+        </record>
+
+
+        <record id="action_view_late_checkins" model="ir.actions.act_window">
+    <field name="name">Late Check-ins</field>
+    <field name="res_model">hr.late.checkin</field>
+    <field name="view_mode">tree</field>
+    <field name="domain">[(1, '=', 1)]</field>  <!-- Placeholder domain -->
+</record>
+
+
+        <record id="view_hr_late_checkin_form" model="ir.ui.view">
+            <field name="name">hr.late.checkin.form</field>
+            <field name="model">hr.late.checkin</field>
+            <field name="arch" type="xml">
+                <form>
+                    <group>
+                        <field name="employee_id"/>
+                        <field name="date"/>
+                        <field name="late_duration"/>
+                    </group>
+                </form>
+            </field>
+        </record>
+
+        <menuitem name="BioTime" id="biotime8_integeration.menu_1_list"
+                  action="biotime8_integeration_action_window"/>
+
+        <menuitem name="Generate Auth " id="biotime_auth_generate"
+                  action="generate_auth_action_window"/>
+
+    </data>
+</odoo>

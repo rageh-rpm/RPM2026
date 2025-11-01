@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="biotime_employee_form_inherit" model="ir.ui.view">
+            <field name="name">biotime.employee.form</field>
+            <field name="model">hr.employee</field>
+            <field name="inherit_id" ref="hr.view_employee_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//div[@name='button_box']" position="inside">
+                    <button name="action_view_late_checkins"
+
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-clock-o">
+                        <field name="late_hours_total" widget="float_time" string="Total Late Hours(-)"/>
+                    </button>
+            </xpath>
+            <xpath expr="//header" position="inside">
+<!--                <button name="create_in_biotime" type="object"-->
+<!--                        icon="fa-calendar" string="Sync with Biotime" />-->
+<!--                <button name="load_punches" type="object"-->
+<!--                        icon="fa-calendar" string="Load Punches" />-->
+
+
+                <!--                            attrs="{'invisible': [('type', '=', 'lead')]}" />-->
+            </xpath>
+            <xpath expr="//notebook" position="inside">
+                <page name="punches" string="Punches">
+                    <group>
+                        <group>
+                            <field name="punch_from"/>
+                        </group>
+                        <group>
+                            <field name="punch_to"/>
+                            <field name="night_shift"/>
+
+                        </group>
+                    </group>
+                    <field name="biotime_punches">
+                        <tree>
+                            <field name="id"/>
+                            <field name="name"/>
+                            <field name="emp_code"/>
+                            <field name="first_name"/>
+                            <field name="punch_time"/>
+                            <field name="punch_state_display"/>
+                            <field name="verify_type_display"/>
+                            <field name="terminal_alias"/>
+                        </tree>
+                    </field>
+                </page>
+                <page name="night_shit" string="Night Shift Days">
+                    <button name="action_all_month" type="object" string="All Month" class="oe_highlight"/>
+                    <field name="night_shift_ids">
+                        <tree editable="bottom">
+                            <field name="date"/>
+                            <field name="notes"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+
+
+
+
+
+        </field>
+    </record>
+
+    <record id="view_employee_tree_inherit" model="ir.ui.view">
+        <field name="name">hr.employee.tree.inherit.load.punches</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//tree" position="inside">
+                <header>
+                    <button name="action_load_punches_wizard" type="object" string="Load Punches" class="btn-primary"/>
+                </header>
+            </xpath>
+        </field>
+    </record>
+
+</data>
+        </odoo>
