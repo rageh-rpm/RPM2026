@@ -129,14 +129,15 @@ class Attendance(models.Model):
                         ('employee_id', '=', emp.id),
                         ('date', '=', date)
                     ], limit=1)
+                    existing_overtime.unlink()
 
-                    if existing_overtime:
-                        existing_overtime.write({
-                            'duration': existing_overtime.duration + hours,
-                            'duration_real': existing_overtime.duration_real + hours,
-                        })
-                    else:
-                        overtime_vals_list.append({
+                    # if existing_overtime:
+                    #     existing_overtime.write({
+                    #         'duration': existing_overtime.duration + hours,
+                    #         'duration_real': existing_overtime.duration_real + hours,
+                    #     })
+
+                    overtime_vals_list.append({
                             'employee_id': emp.id,
                             'date': date,
                             'duration': hours + (minutes / 60),  # Store duration as a float if needed
@@ -146,6 +147,21 @@ class Attendance(models.Model):
         # Create or update overtime records
         if overtime_vals_list:
             self.env['hr.attendance.overtime'].sudo().create(overtime_vals_list)
+
+
+    @api.depends('check_in', 'check_out')
+    def _compute_overtime_hours(self):
+        """Link attendance to overtime duration — no recalculation."""
+        Overtime = self.env['hr.attendance.overtime']
+        for att in self:
+            duration = 0.0
+            if att.employee_id and att.check_out:
+                overtime = Overtime.search([
+                    ('employee_id', '=', att.employee_id.id),
+                    ('date', '=', att.check_out.date())
+                ], limit=1)
+                duration = overtime.duration_real if overtime else 0.0
+            att.overtime_hours = duration
 
 
 class BiotimePunch(models.Model):
