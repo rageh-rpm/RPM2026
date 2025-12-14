@@ -42,59 +42,78 @@
             <field name="view_mode">list</field>
         </record>
 
-        <record id="inherit_hr_attendance_config_settings" model="ir.ui.view">
-            <field name="name">hr.attendance.config.settings.inherit.view</field>
-            <field name="model">res.config.settings</field>
-            <field name="inherit_id" ref="hr_attendance.res_config_settings_view_form"/>
-            <field name="arch" type="xml">
-                <xpath expr="//form" position="inside">
-                <app data-string="industry_fsm" string="Biotime Integration" name="biotime8_integeration" >
-                    <h2>Shift Settings</h2>
-                    <div class="row mt16 o_settings_container" name="shift_settings">
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane" title="Set the start and end times for day and night shifts.">
-                                <field name="day_shift_start"/>
-                                <field name="day_shift_end"/>
-                                <field name="night_shift_start"/>
-                                <field name="night_shift_end"/>
-                                <field name="timezone"/>
-                                <field name="day_ovt_end"/>
+ <record id="res_config_settings_view_form_inherit_biotime" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.biotime</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="hr.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Add Biotime Integration section -->
+            <xpath expr="//form" position="inside">
+                <app string="Biotime Integration" name="biotime_attendance">
+                    <block title="Biotime Server Configuration">
+                        <setting help="Configure connection to Biotime attendance system">
+                            <field name="biotime_base_url" placeholder="http://172.20.10.11"/>
+                            <div class="mt8">
+                                <label for="biotime_api_timeout" class="o_light_label"/>
+                                <field name="biotime_api_timeout" class="oe_inline"/>
+                                <span class="o_form_label"> seconds</span>
                             </div>
-                            <div class="o_setting_right_pane">
-                                <label for="day_shift_start" class="o_form_label">Day Shift Start Time</label>
-                                <div class="text-muted">
-                                    Specify the starting time for day shifts.
-                                </div>
-                                <label for="day_shift_end" class="o_form_label">Day Shift End Time</label>
-                                <div class="text-muted">
-                                    Specify the ending time for day shifts.
-                                </div>
-                                <label for="night_shift_start" class="o_form_label">Night Shift Start Time</label>
-                                <div class="text-muted">
-                                    Specify the starting time for night shifts.
-                                </div>
-                                <label for="night_shift_end" class="o_form_label">Night Shift End Time</label>
-                                <div class="text-muted">
-                                    Specify the ending time for night shifts.
-                                </div>
-                                <label for="timezone" class="o_form_label">Timezone</label>
-                                <div class="text-muted">
-                                    Specify the Timezone.
-                                </div>
+                        </setting>
+                    </block>
 
-                                 <label for="day_ovt_end" class="o_form_label">Timezone</label>
-                                <div class="text-muted">
-                                    Time to Start Night OVT.
-                                </div>
+                    <block title="Shift Configuration">
+                        <setting string="Day Shift Times"
+                                 help="Configure default day shift working hours">
+                            <div class="row">
+                                <label for="day_shift_start" string="Start Time" class="col-3 o_light_label"/>
+                                <field name="day_shift_start" widget="float_time" class="col-3"/>
                             </div>
-                        </div>
-                    </div>
-                                </app>
+                            <div class="row mt8">
+                                <label for="day_shift_end" string="End Time" class="col-3 o_light_label"/>
+                                <field name="day_shift_end" widget="float_time" class="col-3"/>
+                            </div>
+                            <div class="row mt8">
+                                <label for="day_ovt_end" string="OT End Time" class="col-3 o_light_label"/>
+                                <field name="day_ovt_end" widget="float_time" class="col-3"/>
+                            </div>
+                        </setting>
 
-                </xpath>
-            </field>
-        </record>
+                        <setting string="Night Shift Times"
+                                 help="Configure default night shift working hours">
+                            <div class="row">
+                                <label for="night_shift_start" string="Start Time" class="col-3 o_light_label"/>
+                                <field name="night_shift_start" widget="float_time" class="col-3"/>
+                            </div>
+                            <div class="row mt8">
+                                <label for="night_shift_end" string="End Time" class="col-3 o_light_label"/>
+                                <field name="night_shift_end" widget="float_time" class="col-3"/>
+                            </div>
+                             <div class="row mt8">
+                                <label for="timezone" string="TimeZone" class="col-3 o_light_label"/>
+                                <field name="timezone" class="col-3"/>
+                            </div>
+                        </setting>
 
+                        <setting string="Attendance Tolerances"
+                                 help="Grace periods for late check-in and overtime">
+                            <div class="row">
+                                <label for="late_checkin_tolerance" string="Late Tolerance" class="col-4 o_light_label"/>
+                                <field name="late_checkin_tolerance" class="col-2"/>
+                                <span class="col-2 o_form_label">minutes</span>
+                            </div>
+                            <div class="row mt8">
+                                <label for="overtime_tolerance_company" string="OT Tolerance" class="col-4 o_light_label"/>
+                                <field name="overtime_tolerance_company" class="col-2"/>
+                                <span class="col-2 o_form_label">minutes</span>
+                            </div>
+                        </setting>
+                    </block>
+                </app>
+            </xpath>
+
+        </field>
+    </record>
 
 
         <record id="view_hr_late_checkin_list" model="ir.ui.view">

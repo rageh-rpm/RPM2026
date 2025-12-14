@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Main Menu -->
+    <menuitem id="menu_treasury_root"
+              name="Treasury"
+              sequence="45"
+              web_icon="treasury_request,static/description/icon.png"/>
+
+    <!-- Requests Menu -->
+    <menuitem id="menu_treasury_requests"
+              name="Requests"
+              parent="menu_treasury_root"
+              sequence="10"/>
+
+    <menuitem id="menu_treasury_request_all"
+              name="All Requests"
+              parent="menu_treasury_requests"
+              action="action_treasury_request"
+              sequence="10"/>
+
+    <menuitem id="menu_treasury_request_pending_manager"
+              name="Pending Manager"
+              parent="menu_treasury_requests"
+              action="action_treasury_request_pending_manager"
+              sequence="20"
+              groups="group_treasury_manager"/>
+
+    <menuitem id="menu_treasury_request_pending_treasury"
+              name="Pending Treasury"
+              parent="menu_treasury_requests"
+              action="action_treasury_request_pending_treasury"
+              sequence="30"
+              groups="group_treasury_officer"/>
+
+    <menuitem id="menu_treasury_request_ready_execute"
+              name="Ready to Execute"
+              parent="menu_treasury_requests"
+              action="action_treasury_request_ready_execute"
+              sequence="40"
+              groups="group_treasury_exec"/>
+
+</odoo>

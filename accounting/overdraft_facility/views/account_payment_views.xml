@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Account Payment Form View Inherit - UPDATED -->
+    <record id="view_account_payment_form_inherit_overdraft" model="ir.ui.view">
+        <field name="name">account.payment.form.inherit.overdraft</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Add buttons to button_box -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_interest_accruals"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-percent"
+                        invisible="not is_overdraft_payment or total_interest_accrued == 0">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value">
+                            <field name="total_interest_accrued" widget="monetary"/>
+                        </span>
+                        <span class="o_stat_text">Interest</span>
+                    </div>
+                </button>
+
+                <button name="action_view_settlement_allocations"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-exchange"
+                        invisible="not is_overdraft_payment or settlement_status == 'pending'">
+                    <field name="settlement_status" widget="label"
+                           decoration-success="settlement_status == 'settled'"
+                           decoration-warning="settlement_status == 'partial'"/>
+                </button>
+            </xpath>
+
+            <!-- Add overdraft fields after journal -->
+            <xpath expr="//field[@name='journal_id']" position="after">
+                <field name="is_overdraft_payment" invisible="1"/>
+                <field name="overdraft_facility_id"
+                       invisible="not is_overdraft_payment"
+                       readonly="1"
+                       options="{'no_create': True}"/>
+            </xpath>
+
+            <!-- Add interest dates group -->
+            <xpath expr="//field[@name='overdraft_facility_id']" position="after">
+                <field name="actual_transaction_date"
+                       invisible="not is_overdraft_payment"
+                       string="Actual Transaction Date"/>
+            </xpath>
+
+            <!-- Add notebook page for overdraft details -->
+            <xpath expr="//notebook" position="inside">
+                <page string="Overdraft Details"
+                      name="overdraft_details"
+                      invisible="not is_overdraft_payment">
+                    <group>
+                        <group string="Interest Calculation">
+                            <field name="interest_start_date" readonly="1"/>
+                            <field name="settlement_due_date" readonly="1"/>
+                            <field name="total_interest_accrued" widget="monetary"/>
+                        </group>
+                        <group string="Settlement Status">
+                            <field name="settlement_status" widget="badge"/>
+                            <field name="amount_settled" widget="monetary"/>
+                            <field name="amount_outstanding" widget="monetary"/>
+                        </group>
+                    </group>
+
+                    <separator string="Interest Accruals"/>
+                    <field name="interest_accrual_ids" readonly="1">
+                        <list>
+                            <field name="name"/>
+                            <field name="accrual_date"/>
+                            <field name="period_from"/>
+                            <field name="period_to"/>
+                            <field name="days_count"/>
+                            <field name="interest_amount" sum="Total"/>
+                            <field name="has_variable_rates" widget="boolean"/>
+                            <field name="state" widget="badge"/>
+                            <button name="action_view_breakdown"
+                                    type="object"
+                                    string="View Breakdown"
+                                    invisible="not has_variable_rates"
+                                    icon="fa-list"/>
+                        </list>
+                    </field>
+
+                    <separator string="Settlement Allocations"/>
+                    <field name="settlement_allocation_ids" readonly="1">
+                        <list>
+                            <field name="settlement_id"/>
+                            <field name="amount" widget="monetary" sum="Total Settled"/>
+                            <field name="state" widget="badge"/>
+                        </list>
+                    </field>
+
+                    <div class="mt-2" invisible="not overdraft_facility_id">
+                        <button name="action_recalculate_interest"
+                                type="object"
+                                string="Recalculate Interest"
+                                class="btn-secondary"
+                                invisible="settlement_status == 'settled'"
+                                help="Recalculate interest based on current rates"/>
+                    </div>
+                </page>
+            </xpath>
+
+        </field>
+    </record>
+
+    <!-- Payment List View - Add overdraft columns -->
+    <record id="view_account_payment_list_inherit_overdraft" model="ir.ui.view">
+        <field name="name">account.payment.list.inherit.overdraft</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='amount_signed']" position="after">
+                <field name="settlement_status"
+                       optional="hide"
+                       widget="badge"
+                       decoration-success="settlement_status == 'settled'"
+                       decoration-warning="settlement_status == 'partial'"/>
+                <field name="settlement_due_date" optional="hide"/>
+                <field name="amount_outstanding" optional="hide" widget="monetary"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

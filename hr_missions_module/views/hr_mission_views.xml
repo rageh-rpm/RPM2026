@@ -31,12 +31,9 @@
 
     <menuitem id="menu_hr_mission_my" name="My Missions" sequence="20"
               parent="menu_hr_mission_root"
-              action="action_hr_mission"
-    />
+              action="action_hr_mission"/>
 
-
-
-    <!-- List View -->
+    <!-- List View - UPDATED -->
     <record id="view_hr_mission_list" model="ir.ui.view">
         <field name="name">hr.mission.list</field>
         <field name="model">hr.mission</field>
@@ -44,33 +41,39 @@
             <list string="Business Missions">
                 <field name="name" string="Reference"/>
                 <field name="employee_id" string="Employee" widget="many2one_avatar_user"/>
-                <field name="department_id" string="Department"/>
+                <field name="department_id" string="Department" optional="hide"/>
                 <field name="type_id" string="Mission Type"/>
                 <field name="start_datetime" string="Start Date"/>
                 <field name="end_datetime" string="End Date"/>
-                <field name="duration_days" string="Duration (Days)"/>
+                <field name="duration_type" string="Duration Type" optional="hide"/>
+                <field name="duration_days" string="Duration (Days)" optional="show"/>
+                <field name="duration_hours" string="Duration (Hours)" optional="show"/>
+                <field name="scope" string="Scope" optional="hide"/>
                 <field name="grand_total" string="Total Amount"/>
-                <field name="company_currency_id" string="Currency"/>
-                <field name="state" string="Status" widget="badge" decoration-success="state == 'approved'" decoration-warning="state == 'paid'" decoration-danger="state == 'cancelled'" decoration-muted="state == 'draft'"/>
+                <field name="company_currency_id" string="Currency" column_invisible="1"/>
+                <field name="time_off_id" string="Time Off" optional="hide"/>
+                <field name="state" string="Status" widget="badge"
+                       decoration-success="state == 'approved'"
+                       decoration-warning="state == 'paid'"
+                       decoration-danger="state == 'cancelled'"
+                       decoration-muted="state == 'draft'"
+                       decoration-info="state in ['to_manager', 'to_hr', 'to_finance']"/>
             </list>
         </field>
     </record>
 
-
-    <!-- Form View -->
+    <!-- Form View - UPDATED -->
     <record id="view_hr_mission_form" model="ir.ui.view">
         <field name="name">hr.mission.form</field>
         <field name="model">hr.mission</field>
         <field name="arch" type="xml">
             <form string="Business Mission">
                 <header>
-                    <!-- Smart Status Bar -->
-
                     <!-- Dynamic Action Buttons -->
                     <button name="action_request_manager" type="object"
                             string="📤 Submit for Approval"
                             invisible="state != 'draft'"
-                            class="btn-primary oe_highlight"
+                            class="btn-primary"
                             groups="hr_missions_module.group_hr_mission_employee"/>
 
                     <button name="action_approve_manager" type="object"
@@ -103,6 +106,12 @@
                             class="btn-info"
                             groups="hr_missions_module.group_hr_mission_finance"/>
 
+                    <button name="action_reject" type="object"
+                            string="❌ Reject"
+                            class="btn-danger"
+                            invisible="state in ['draft', 'paid', 'cancelled', 'rejected']"
+                            groups="hr_missions_module.group_hr_mission_manager"/>
+
                     <button name="action_cancel" type="object"
                             string="❌ Cancel"
                             class="btn-secondary"
@@ -113,75 +122,114 @@
                             invisible="state not in ['cancelled', 'rejected']"
                             class="btn-outline-secondary"
                             groups="hr_missions_module.group_hr_mission_manager"/>
+
                     <field name="state" widget="statusbar"
-                           statusbar_visible="draft,to_manager,to_sector_head,to_hr,to_finance,approved,paid,cancelled"
-                           />
-
-
+                           statusbar_visible="draft,to_manager,to_sector_head,to_hr,to_finance,approved,paid"/>
                 </header>
 
                 <sheet>
+                    <!-- SMART BUTTONS - NEW -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_time_off"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-calendar"
+                                invisible="not time_off_id">
+                            <field name="time_off_id" invisible="1"/>
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Time Off</span>
+                                <span class="o_stat_value">Linked</span>
+                            </div>
+                        </button>
+                    </div>
+
                     <!-- Basic Information -->
-                    <group string="📋 Mission Overview" >
+                    <group string="📋 Mission Overview">
                         <group>
                             <field name="employee_id" string="Assigned Employee" required="1"/>
-                            <field name="manager_id" string="Reporting Manager" />
-                            <field name="department_id" string="Department" />
+                            <field name="manager_id" string="Reporting Manager"/>
+                            <field name="department_id" string="Department"/>
                         </group>
                         <group>
                             <field name="name" string="Mission ID" readonly="1" class="font-weight-bold"/>
                             <field name="company_id"/>
                             <field name="requested_by" string="Requested By" readonly="1"/>
                         </group>
-
                     </group>
 
-
-                    <!-- Mission Details -->
-                    <group string="🎯 Mission Details" >
+                    <!-- Mission Details - UPDATED -->
+                    <group string="🎯 Mission Details">
                         <group>
                             <field name="type_id" string="Mission Type" required="1"/>
-                            <field name="company_currency_id" string="Currency" />
-
+                            <field name="company_currency_id" string="Currency"/>
                             <field name="scope" string="Mission Scope" required="1"/>
                         </group>
                         <group>
                             <field name="start_datetime" string="Start Date &amp; Time" required="1"/>
                             <field name="end_datetime" string="End Date &amp; Time" required="1"/>
-                            <field name="duration_days" string="Duration (Days)" readonly="1"/>
+                            <field name="duration_type" string="Duration Type" widget="radio"/>
+                            <label for="duration_days" string="Duration"/>
+                            <div class="o_row">
+                                <field name="duration_days"
+                                       string="Days"
+                                       readonly="1"
+                                       class="oe_inline"/>
+                                <span class="oe_inline"> days (</span>
+                                <field name="duration_hours"
+                                       string="Hours"
+                                       readonly="1"
+                                       widget="float_time"
+                                       class="oe_inline"/>
+                                <span class="oe_inline"> hours)</span>
+                            </div>
                         </group>
-
                     </group>
 
                     <!-- Location Details -->
                     <group>
-
-                        <group string="📍 Destination Details"  >
-                            <field name="country_id" required="scope != 'abroad'" invisible="scope != 'abroad'"/>
-                            <field name="state_id" string="State/Province" required="1" domain="[('country_id', '=', country_id)]"/>
-                            <field name="distance_km" string="Distance (KM)" readonly="1" invisible="scope != 'in_country'"/>
-                            <field name="fixed_fare" string="Fixed Fare" readonly="1" widget="monetary" invisible="scope != 'in_country'"/>
+                        <group string="📍 Destination Details">
+                            <field name="country_id"
+                                   required="scope == 'abroad'"
+                                   invisible="scope != 'abroad'"/>
+                            <field name="state_id"
+                                   string="State/Province"
+                                   required="1"
+                                   domain="[('country_id', '=', country_id)]"/>
+                            <field name="distance_km"
+                                   string="Distance (KM)"
+                                   readonly="1"
+                                   invisible="scope != 'in_country'"/>
+                            <field name="fixed_fare"
+                                   string="Fixed Fare"
+                                   readonly="1"
+                                   widget="monetary"
+                                   invisible="scope != 'in_country'"/>
                         </group>
-                        <group string="🎯 Mission Objectives" >
-                            <field name="mission_purpose" string="Purpose of Mission" required="1" />
-                            <field name="expected_outcomes" string="Expected Outcomes" />
+                        <group string="🎯 Mission Objectives">
+                            <field name="mission_purpose"
+                                   string="Purpose of Mission"
+                                   required="1"/>
+                            <field name="expected_outcomes"
+                                   string="Expected Outcomes"/>
                         </group>
                     </group>
-
-
-                    <!-- Mission Purpose -->
-
 
                     <notebook>
                         <page string="🏨 Accommodation &amp; 🚗 Transport">
                             <group col="2">
                                 <group string="Accommodation">
                                     <field name="accommodation" string="Accommodation Required"/>
-                                    <field name="accommodation_type_id" string="Accommodation Type" invisible="not accommodation"/>
+                                    <field name="accommodation_type_id"
+                                           string="Accommodation Type"
+                                           invisible="not accommodation"
+                                           required="accommodation"/>
                                 </group>
                                 <group string="Transportation">
                                     <field name="transportation" string="Transportation Required"/>
-                                    <field name="transportation_type_id" string="Transportation Type" invisible="not transportation"/>
+                                    <field name="transportation_type_id"
+                                           string="Transportation Type"
+                                           invisible="not transportation"
+                                           required="transportation"/>
                                 </group>
                             </group>
                         </page>
@@ -193,34 +241,118 @@
                                     <field name="allowance_type" string="Type"/>
                                     <field name="amount" string="Unit Amount" widget="monetary"/>
                                     <field name="quantity" string="Qty"/>
-                                    <field name="total_amount" string="Total Amount" widget="monetary" readonly="1"/>
+                                    <field name="total_amount"
+                                           string="Total Amount"
+                                           widget="monetary"
+                                           readonly="1"
+                                           sum="Total"/>
                                 </list>
                             </field>
-                            <group class="oe_subtotal_footer">
-                                <field name="grand_total" string="Total Mission Cost" readonly="1" widget="monetary" class="oe_subtotal_footer_separator"/>
+                            <group class="oe_subtotal_footer oe_right">
+                                <field name="grand_total"
+                                       string="Total Mission Cost"
+                                       readonly="1"
+                                       widget="monetary"
+                                       class="oe_subtotal_footer_separator"
+                                       options="{'currency_field': 'company_currency_id'}"/>
                             </group>
                         </page>
 
                         <page string="📝 Additional Information">
                             <group string="Mission Description">
-                                <field name="description" string="Additional Notes" nolabel="1"/>
+                                <field name="description"
+                                       string="Additional Notes"
+                                       nolabel="1"
+                                       placeholder="Enter any additional details about this mission..."/>
                             </group>
                         </page>
 
                         <page string="📋 Approval Trail" invisible="state == 'draft'">
                             <group col="2" string="Approval History">
-                                <field name="approved_by_manager" readonly="1"/>
-                                <field name="approved_by_sector_head" readonly="1"/>
-                                <field name="approved_by_hr" readonly="1"/>
-                                <field name="approved_by_finance" readonly="1"/>
+                                <group>
+                                    <field name="approved_by_manager"
+                                           readonly="1"
+                                           string="Manager"/>
+                                    <field name="approved_by_sector_head"
+                                           readonly="1"
+                                           string="Sector Head"/>
+                                </group>
+                                <group>
+                                    <field name="approved_by_hr"
+                                           readonly="1"
+                                           string="HR"/>
+                                    <field name="approved_by_finance"
+                                           readonly="1"
+                                           string="Finance"/>
+                                </group>
                             </group>
-                            <field name="rejection_reason" readonly="1" invisible="state != 'rejected'" nolabel="1"/>
+                            <group string="Rejection Details" invisible="state != 'rejected'">
+                                <field name="rejection_reason"
+                                       readonly="1"
+                                       nolabel="1"
+                                       placeholder="Reason for rejection..."/>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
                 <chatter/>
 
+                <!-- Chatter -->
+<!--                <div class="oe_chatter">-->
+<!--                    <field name="message_follower_ids" groups="base.group_user"/>-->
+<!--                    <field name="message_ids"/>-->
+<!--                </div>-->
             </form>
         </field>
     </record>
+
+    <!-- Search View - NEW -->
+    <record id="view_hr_mission_search" model="ir.ui.view">
+        <field name="name">hr.mission.search</field>
+        <field name="model">hr.mission</field>
+        <field name="arch" type="xml">
+            <search string="Search Missions">
+                <field name="name" string="Reference"/>
+                <field name="employee_id"/>
+                <field name="department_id"/>
+                <field name="type_id"/>
+                <field name="state_id"/>
+
+                <filter string="My Missions" name="my_missions"
+                        domain="[('employee_id.user_id', '=', uid)]"/>
+                <filter string="My Team Missions" name="my_team"
+                        domain="[('employee_id.parent_id.user_id', '=', uid)]"/>
+
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Pending Approval" name="pending"
+                        domain="[('state', 'in', ['to_manager', 'to_sector_head', 'to_hr', 'to_finance'])]"/>
+                <filter string="Approved" name="approved" domain="[('state', '=', 'approved')]"/>
+                <filter string="Paid" name="paid" domain="[('state', '=', 'paid')]"/>
+
+                <separator/>
+                <filter string="In Country" name="in_country" domain="[('scope', '=', 'in_country')]"/>
+                <filter string="Abroad" name="abroad" domain="[('scope', '=', 'abroad')]"/>
+
+                <separator/>
+                <filter string="With Time Off" name="with_timeoff" domain="[('time_off_id', '!=', False)]"/>
+                <filter string="No Time Off" name="no_timeoff" domain="[('time_off_id', '=', False)]"/>
+
+                <separator/>
+                <filter string="This Month" name="this_month"
+                        domain="[('start_datetime', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d')),
+                                 ('start_datetime', '&lt;=', (context_today() + relativedelta(day=31)).strftime('%Y-%m-%d'))]"/>
+
+                <group expand="0" string="Group By">
+                    <filter string="Employee" name="group_employee" context="{'group_by': 'employee_id'}"/>
+                    <filter string="Department" name="group_department" context="{'group_by': 'department_id'}"/>
+                    <filter string="Mission Type" name="group_type" context="{'group_by': 'type_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Scope" name="group_scope" context="{'group_by': 'scope'}"/>
+                    <filter string="Start Date" name="group_start_date" context="{'group_by': 'start_datetime:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
 </odoo>

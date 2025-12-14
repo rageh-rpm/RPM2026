@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- Module Category -->
+        <record id="module_category_treasury" model="ir.module.category">
+            <field name="name">Treasury</field>
+            <field name="description">Treasury Payment Request Management</field>
+            <field name="sequence">50</field>
+        </record>
+
+        <!-- Base User - Can create requests -->
+        <record id="group_treasury_request_user" model="res.groups">
+            <field name="name">Treasury: User</field>
+            <field name="category_id" ref="module_category_treasury"/>
+            <field name="comment">Can create and view own payment requests</field>
+        </record>
+
+        <!-- Manager - Can approve own team requests -->
+        <record id="group_treasury_manager" model="res.groups">
+            <field name="name">Treasury: Manager</field>
+            <field name="category_id" ref="module_category_treasury"/>
+            <field name="implied_ids" eval="[(4, ref('group_treasury_request_user'))]"/>
+            <field name="comment">Can approve requests from direct reports</field>
+        </record>
+
+        <!-- Treasury Officer - Can review and approve for execution -->
+        <record id="group_treasury_officer" model="res.groups">
+            <field name="name">Treasury: Officer</field>
+            <field name="category_id" ref="module_category_treasury"/>
+            <field name="implied_ids" eval="[(4, ref('group_treasury_request_user'))]"/>
+            <field name="comment">Can approve requests for execution</field>
+        </record>
+
+        <!-- Treasury Executive - Can fill data and execute -->
+        <record id="group_treasury_exec" model="res.groups">
+            <field name="name">Treasury: Executive</field>
+            <field name="category_id" ref="module_category_treasury"/>
+            <field name="implied_ids" eval="[(4, ref('group_treasury_request_user'))]"/>
+            <field name="comment">Can execute approved payments</field>
+        </record>
+
+        <!-- Treasury Admin - Full access -->
+        <record id="group_treasury_admin" model="res.groups">
+            <field name="name">Treasury: Administrator</field>
+            <field name="category_id" ref="module_category_treasury"/>
+            <field name="implied_ids" eval="[(4, ref('group_treasury_exec')), (4, ref('group_treasury_officer')), (4, ref('group_treasury_manager'))]"/>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+        </record>
+
+        <!-- Record Rules -->
+
+        <!-- Users see own requests -->
+        <record id="treasury_request_user_rule" model="ir.rule">
+            <field name="name">Treasury Request: User Own Records</field>
+            <field name="model_id" ref="model_treasury_request"/>
+            <field name="domain_force">[('requester_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_treasury_request_user'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Managers see requests from their team -->
+        <record id="treasury_request_manager_rule" model="ir.rule">
+            <field name="name">Treasury Request: Manager Team Records</field>
+            <field name="model_id" ref="model_treasury_request"/>
+            <field name="domain_force">[('manager_id', '=', user.id)]</field>
+            <field name="groups" eval="[(4, ref('group_treasury_manager'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Treasury officers and executives see all -->
+        <record id="treasury_request_officer_rule" model="ir.rule">
+            <field name="name">Treasury Request: Officer/Executive All Records</field>
+            <field name="model_id" ref="model_treasury_request"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_treasury_officer')), (4, ref('group_treasury_exec'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

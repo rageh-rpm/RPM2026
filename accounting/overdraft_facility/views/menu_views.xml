@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+
+    <record id="action_overdraft_interest_accrual" model="ir.actions.act_window">
+        <field name="name">Interest Accruals</field>
+        <field name="res_model">overdraft.interest.accrual</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_draft': 1}</field>
+    </record>
+
+    <!-- Main Menu -->
+    <menuitem id="menu_overdraft_root"
+              name="Overdraft"
+              parent="account.menu_finance"
+              sequence="50"/>
+
+    <!-- Facilities Menu -->
+    <menuitem id="menu_overdraft_facilities"
+              name="Facilities"
+              parent="menu_overdraft_root"
+              action="action_overdraft_facility"
+              sequence="10"/>
+
+    <!-- Settlements Menu -->
+    <menuitem id="menu_overdraft_settlements"
+              name="Settlements"
+              parent="menu_overdraft_root"
+              action="action_overdraft_settlement"
+              sequence="20"/>
+
+    <!-- Interest Accruals Menu -->
+    <menuitem id="menu_overdraft_interest_accruals"
+              name="Interest Accruals"
+              parent="menu_overdraft_root"
+              action="action_overdraft_interest_accrual"
+              sequence="30"/>
+
+    <!-- Rate History Menu -->
+    <menuitem id="menu_overdraft_rate_history"
+              name="Rate History"
+              parent="menu_overdraft_root"
+              action="action_overdraft_interest_rate_history"
+              sequence="40"/>
+
+    <!-- Configuration Submenu -->
+    <menuitem id="menu_overdraft_config"
+              name="Configuration"
+              parent="menu_overdraft_root"
+              sequence="100"/>
+
+    <!-- Settlement Allocations (under config) -->
+    <menuitem id="menu_overdraft_settlement_allocations"
+              name="Settlement Allocations"
+              parent="menu_overdraft_config"
+              action="action_overdraft_settlement_allocation"
+              sequence="10"/>
+
+</odoo>

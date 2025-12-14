@@ -1,0 +1,440 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Treasury Request PDF Report -->
+        <record id="report_treasury_request" model="ir.actions.report">
+            <field name="name">Treasury Payment Request</field>
+            <field name="model">treasury.request</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">treasury_request.report_treasury_request_template</field>
+            <field name="report_file">treasury_request.report_treasury_request_template</field>
+            <field name="binding_model_id" ref="model_treasury_request"/>
+            <field name="binding_type">report</field>
+            <field name="print_report_name">'Treasury Request - %s' % (object.name)</field>
+        </record>
+
+        <!-- Treasury Request Payment Slip -->
+        <record id="report_treasury_request_payment_slip" model="ir.actions.report">
+            <field name="name">Payment Execution Slip</field>
+            <field name="model">treasury.request</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">treasury_request.report_payment_slip_template</field>
+            <field name="report_file">treasury_request.report_payment_slip_template</field>
+            <field name="binding_model_id" ref="model_treasury_request"/>
+            <field name="binding_type">report</field>
+            <field name="print_report_name">'Payment Slip - %s' % (object.name)</field>
+        </record>
+
+        <!-- Main Treasury Request Report -->
+        <template id="report_treasury_request_template">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="web.external_layout">
+                        <div class="page">
+                            <!-- Header -->
+                            <div class="row mb-4 border-bottom pb-3">
+                                <div class="col-6">
+                                    <h2 class="text-primary">
+                                        <strong>Treasury Payment Request</strong>
+                                    </h2>
+                                    <p class="text-muted">Request Reference: <strong t-out="o.name"/></p>
+                                </div>
+                                <div class="col-6 text-right">
+                                    <div class="mb-2">
+                                        <strong>Status:</strong>
+                                        <span t-out="dict(o._fields['state'].selection).get(o.state)"/>
+                                    </div>
+                                    <div>
+                                        <strong>Date:</strong>
+                                        <span t-out="o.request_date.strftime('%Y-%m-%d') if o.request_date else '-'"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Request Details Section -->
+                            <div class="row mb-4">
+                                <div class="col-6">
+                                    <h5 class="text-dark"><strong>Request Information</strong></h5>
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td class="text-muted" style="width: 40%;">Type:</td>
+                                            <td>
+                                                <strong t-out="dict(o._fields['request_type'].selection).get(o.request_type)"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Category:</td>
+                                            <td>
+                                                <strong t-out="dict(o._fields['payment_category'].selection).get(o.payment_category)"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Requested By:</td>
+                                            <td>
+                                                <strong t-out="o.requester_id.name"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Request Date:</td>
+                                            <td>
+                                                <strong t-out="o.request_date.strftime('%Y-%m-%d %H:%M') if o.request_date else '-'"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-6">
+                                    <h5 class="text-dark"><strong>Payee Information</strong></h5>
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td class="text-muted" style="width: 40%;">Payee:</td>
+                                            <td>
+                                                <strong t-out="o.partner_id.name"/>
+                                            </td>
+                                        </tr>
+                                        <tr t-if="o.partner_id.email">
+                                            <td class="text-muted">Email:</td>
+                                            <td t-out="o.partner_id.email"/>
+                                        </tr>
+                                        <tr t-if="o.partner_id.phone">
+                                            <td class="text-muted">Phone:</td>
+                                            <td t-out="o.partner_id.phone"/>
+                                        </tr>
+                                        <tr t-if="o.partner_bank_id">
+                                            <td class="text-muted">Bank Account:</td>
+                                            <td>
+                                                <strong t-out="o.partner_bank_id.acc_number"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Financial Details -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-dark"><strong>Payment Amount</strong></h5>
+                                    <div class="alert alert-info" role="alert">
+                                        <div class="row">
+                                            <div class="col-6">
+                                                <p class="mb-0">
+                                                    <span class="text-muted">Amount:</span>
+                                                </p>
+                                                <h4 class="text-primary">
+                                                    <strong t-out="'{:,.2f}'.format(o.amount)"/> <span t-out="o.currency_id.symbol"/>
+                                                </h4>
+                                            </div>
+                                            <div class="col-6">
+                                                <p class="mb-0">
+                                                    <span class="text-muted">Currency:</span>
+                                                </p>
+                                                <h4>
+                                                    <strong t-out="o.currency_id.name"/>
+                                                </h4>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-dark"><strong>Description</strong></h5>
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <p t-out="o.description"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Scheduling -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-dark"><strong>Execution Details</strong></h5>
+                                    <table class="table table-sm table-bordered">
+                                        <tr>
+                                            <td class="text-muted" style="width: 30%;">Requested Payment Date:</td>
+                                            <td t-out="o.scheduled_date.strftime('%Y-%m-%d') if o.scheduled_date else '-'"/>
+                                        </tr>
+                                        <tr t-if="o.payment_category">
+                                            <td class="text-muted">Payment Category:</td>
+                                            <td t-out="dict(o._fields['payment_category'].selection).get(o.payment_category)"/>
+                                        </tr>
+                                        <tr t-if="o.journal_id">
+                                            <td class="text-muted">Payment Journal:</td>
+                                            <td t-out="o.journal_id.name"/>
+                                        </tr>
+                                        <tr t-if="o.payment_method_line_id">
+                                            <td class="text-muted">Payment Method:</td>
+                                            <td t-out="o.payment_method_line_id.name"/>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Approval Workflow -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-dark"><strong>Approval Status</strong></h5>
+                                    <table class="table table-sm table-striped">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th style="width: 25%;">Stage</th>
+                                                <th style="width: 25%;">Approved By</th>
+                                                <th style="width: 25%;">Date</th>
+                                                <th style="width: 25%;">Comments</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <!-- Manager Approval -->
+                                            <tr>
+                                                <td>
+                                                    <strong>Manager Approval</strong>
+                                                    <br/>
+                                                    <small t-if="o.state in ['manager_approved', 'treasury_approved', 'confirmed']" class="badge badge-success">Approved</small>
+                                                    <small t-elif="o.state in ['submitted']" class="badge badge-warning">Pending</small>
+                                                    <small t-else="" class="badge badge-secondary">Not Yet</small>
+                                                </td>
+                                                <td t-out="o.manager_approved_by.name or '-'"/>
+                                                <td>
+                                                    <small t-out="o.manager_approved_date.strftime('%Y-%m-%d %H:%M') if o.manager_approved_date else '-'"/>
+                                                </td>
+                                                <td>
+                                                    <small t-out="o.manager_comments or '-'"/>
+                                                </td>
+                                            </tr>
+                                            <!-- Treasury Approval -->
+                                            <tr>
+                                                <td>
+                                                    <strong>Treasury Approval</strong>
+                                                    <br/>
+                                                    <small t-if="o.state in ['treasury_approved', 'confirmed']" class="badge badge-success">Approved</small>
+                                                    <small t-elif="o.state in ['manager_approved']" class="badge badge-warning">Pending</small>
+                                                    <small t-else="" class="badge badge-secondary">Not Yet</small>
+                                                </td>
+                                                <td t-out="o.treasury_approved_by.name or '-'"/>
+                                                <td>
+                                                    <small t-out="o.treasury_approved_date.strftime('%Y-%m-%d %H:%M') if o.treasury_approved_date else '-'"/>
+                                                </td>
+                                                <td>
+                                                    <small t-out="o.treasury_comments or '-'"/>
+                                                </td>
+                                            </tr>
+                                            <!-- Executive Confirmation -->
+                                            <tr>
+                                                <td>
+                                                    <strong>Executive Confirmation</strong>
+                                                    <br/>
+                                                    <small t-if="o.state == 'confirmed'" class="badge badge-success">Confirmed</small>
+                                                    <small t-elif="o.state == 'treasury_approved'" class="badge badge-warning">Pending</small>
+                                                    <small t-else="" class="badge badge-secondary">Not Yet</small>
+                                                </td>
+                                                <td t-out="o.executive_confirmed_by.name or '-'"/>
+                                                <td>
+                                                    <small t-out="o.executive_confirmed_date.strftime('%Y-%m-%d %H:%M') if o.executive_confirmed_date else '-'"/>
+                                                </td>
+                                                <td>
+                                                    <small t-out="o.executive_comments or '-'"/>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Rejection Info (if applicable) -->
+                            <div t-if="o.state == 'rejected'" class="row mb-4">
+                                <div class="col-12">
+                                    <div class="alert alert-danger" role="alert">
+                                        <h5 class="alert-heading">Request Rejected</h5>
+                                        <p class="mb-2">
+                                            <strong>Rejected By:</strong>
+                                            <span t-out="o.rejected_by.name"/>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Date:</strong>
+                                            <span t-out="o.rejected_date.strftime('%Y-%m-%d %H:%M') if o.rejected_date else '-'"/>
+                                        </p>
+                                        <p class="mb-0">
+                                            <strong>Reason:</strong>
+                                            <br/>
+                                            <span t-out="o.rejection_reason"/>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Related Invoices -->
+                            <div t-if="o.invoice_ids" class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-dark"><strong>Related Invoices</strong></h5>
+                                    <table class="table table-sm table-striped">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Invoice</th>
+                                                <th>Date</th>
+                                                <th>Amount</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="o.invoice_ids" t-as="invoice">
+                                                <td t-out="invoice.name"/>
+                                                <td t-out="invoice.invoice_date.strftime('%Y-%m-%d') if invoice.invoice_date else '-'"/>
+                                                <td>
+                                                    <span t-out="'{:,.2f}'.format(invoice.amount_total)"/> <span t-out="invoice.currency_id.symbol"/>
+                                                </td>
+                                                <td t-out="dict(invoice._fields['state'].selection).get(invoice.state)"/>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Payment Info -->
+                            <div t-if="o.payment_id" class="row mb-4">
+                                <div class="col-12">
+                                    <h5 class="text-dark"><strong>Payment Information</strong></h5>
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td class="text-muted" style="width: 30%;">Payment Reference:</td>
+                                            <td>
+                                                <strong t-out="o.payment_id.name"/>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Payment Status:</td>
+                                            <td>
+                                                <strong t-out="dict(o.payment_id._fields['state'].selection).get(o.payment_id.state)"/>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="row mt-5 pt-3 border-top">
+                                <div class="col-12 text-center text-muted small">
+                                    <p>
+                                        This is an automated document generated by the Treasury Payment Request system.
+                                        <br/>
+                                        Document generated on <span t-out="context_timestamp(datetime.datetime.now()).strftime('%Y-%m-%d %H:%M')"/>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+
+        <!-- Payment Execution Slip (Concise Version) -->
+        <template id="report_payment_slip_template">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="o">
+                    <t t-call="web.external_layout">
+                        <div class="page">
+                            <div class="row text-center mb-4">
+                                <div class="col-12">
+                                    <h2><strong>PAYMENT EXECUTION SLIP</strong></h2>
+                                    <p class="text-muted">Reference: <strong t-out="o.name"/></p>
+                                </div>
+                            </div>
+
+                            <!-- Quick Reference -->
+                            <div class="row mb-4">
+                                <div class="col-6 border-right pr-3">
+                                    <h6 class="text-dark"><strong>FROM (Company)</strong></h6>
+                                    <p t-out="o.company_id.name"/>
+                                    <p t-out="o.company_id.street" class="text-muted"/>
+                                    <p t-out="o.company_id.city" class="text-muted"/>
+                                </div>
+                                <div class="col-6 pl-3">
+                                    <h6 class="text-dark"><strong>TO (Payee)</strong></h6>
+                                    <p t-out="o.partner_id.name"/>
+                                    <p t-out="o.partner_id.street" class="text-muted"/>
+                                    <p t-out="o.partner_id.city" class="text-muted"/>
+                                </div>
+                            </div>
+
+                            <!-- Payment Details Box -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="card border-primary">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                <div class="col-6">
+                                                    <p class="text-muted mb-1">AMOUNT DUE</p>
+                                                    <h3 class="text-primary">
+                                                        <strong t-out="'{:,.2f}'.format(o.amount)"/> <span t-out="o.currency_id.symbol"/>
+                                                    </h3>
+                                                </div>
+                                                <div class="col-6">
+                                                    <p class="text-muted mb-1">PAYMENT DATE</p>
+                                                    <h4 t-out="o.scheduled_date.strftime('%Y-%m-%d') if o.scheduled_date else '-'"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payment Instructions -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h6 class="text-dark"><strong>PAYMENT METHOD</strong></h6>
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td class="text-muted" style="width: 30%;">Journal:</td>
+                                            <td t-out="o.journal_id.name if o.journal_id else '-'"/>
+                                        </tr>
+                                        <tr>
+                                            <td class="text-muted">Method:</td>
+                                            <td t-out="o.payment_method_line_id.name if o.payment_method_line_id else '-'"/>
+                                        </tr>
+                                        <tr t-if="o.partner_bank_id">
+                                            <td class="text-muted">Beneficiary Bank:</td>
+                                            <td t-out="o.partner_bank_id.acc_number"/>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Purpose -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h6 class="text-dark"><strong>PURPOSE</strong></h6>
+                                    <p t-out="o.description"/>
+                                </div>
+                            </div>
+
+                            <!-- Approval Sign-off -->
+                            <div class="row mt-5">
+                                <div class="col-4 text-center">
+                                    <div class="border-top pt-2">
+                                        <p class="text-muted small">Authorized By</p>
+                                        <p>_____________________</p>
+                                    </div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="border-top pt-2">
+                                        <p class="text-muted small">Treasurer</p>
+                                        <p>_____________________</p>
+                                    </div>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="border-top pt-2">
+                                        <p class="text-muted small">Date</p>
+                                        <p>_____________________</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+
+    </data>
+</odoo>

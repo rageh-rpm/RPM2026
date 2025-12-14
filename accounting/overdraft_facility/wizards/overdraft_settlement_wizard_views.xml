@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Settlement Wizard Form -->
+    <record id="view_overdraft_settlement_wizard_form" model="ir.ui.view">
+        <field name="name">overdraft.settlement.wizard.form</field>
+        <field name="model">overdraft.settlement.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Create Settlement from Dues">
+                <group>
+                    <group string="Facility">
+                        <field name="facility_id" readonly="1" force_save="1"/>
+                        <field name="facility_name" readonly="1"/>
+                        <field name="company_id" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                    </group>
+                    <group string="Settlement Details">
+                        <field name="settlement_date"/>
+                        <field name="source_journal_id"
+                               domain="[('type', 'in', ['bank', 'cash']), ('company_id', '=', company_id)]"
+                               options="{'no_create': True}"/>
+                    </group>
+                </group>
+
+                <group string="Description (Optional)">
+                    <field name="description" nolabel="1" placeholder="Enter settlement notes..."/>
+                </group>
+
+                <group>
+                    <group>
+                        <div class="o_row">
+                            <button name="action_select_all"
+                                    type="object"
+                                    string="Select All"
+                                    class="btn-link"/>
+                            <button name="action_deselect_all"
+                                    type="object"
+                                    string="Deselect All"
+                                    class="btn-link"/>
+                            <button name="action_select_overdue"
+                                    type="object"
+                                    string="Select Overdue Only"
+                                    class="btn-link"/>
+                        </div>
+                    </group>
+                    <group>
+                        <label for="total_selected" class="fw-bold"/>
+                        <div class="o_row">
+                            <field name="total_selected" widget="monetary" readonly="1" class="fw-bold"/>
+                            <span class="text-muted">
+                                (<field name="selected_count" readonly="1"/> payment(s) selected)
+                            </span>
+                        </div>
+                    </group>
+                </group>
+
+                <separator string="Pending Payments"/>
+                <field name="line_ids" nolabel="1">
+                    <list editable="bottom" decoration-danger="is_overdue">
+                        <field name="selected" widget="boolean_toggle"/>
+                        <field name="payment_name"/>
+                        <field name="payment_date"/>
+                        <field name="settlement_due_date"/>
+                        <field name="days_overdue"
+                               optional="show"
+                               decoration-danger="days_overdue &gt; 0"/>
+                        <field name="is_overdue" column_invisible="1"/>
+                        <field name="payment_amount" widget="monetary" sum="Total"/>
+                        <field name="amount_settled" widget="monetary" optional="show"/>
+                        <field name="amount_outstanding" widget="monetary"/>
+                        <field name="amount_to_settle" widget="monetary" sum="To Settle"/>
+                        <field name="currency_id" column_invisible="1"/>
+                        <field name="payment_id" column_invisible="1"/>
+                        <field name="wizard_id" column_invisible="1"/>
+                    </list>
+                </field>
+
+                <footer>
+                    <button string="Create Settlement"
+                            name="action_create_settlement"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

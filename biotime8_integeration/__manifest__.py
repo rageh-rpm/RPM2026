@@ -29,6 +29,7 @@
         'wizard/load_punches_wizard.xml',
         'views/hr_employee.xml',
         'views/hr_department.xml',
+        'data/cron.xml',
 
     ],
     # only loaded in demonstration mode

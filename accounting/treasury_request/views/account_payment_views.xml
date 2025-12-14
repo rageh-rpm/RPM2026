@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Inherit Payment Form to add Treasury Request field -->
+    <record id="view_account_payment_form_inherit_treasury" model="ir.ui.view">
+        <field name="name">account.payment.form.inherit.treasury</field>
+        <field name="model">account.payment</field>
+        <field name="inherit_id" ref="account.view_account_payment_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Add smart button -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_treasury_request"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o"
+                        invisible="not treasury_request_id">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_text">Treasury</span>
+                        <span class="o_stat_text">Request</span>
+                    </div>
+                </button>
+            </xpath>
+
+            <!-- Add treasury request field -->
+            <xpath expr="//field[@name='memo']" position="after">
+                <field name="treasury_request_id" readonly="1"/>
+            </xpath>
+
+        </field>
+    </record>
+
+</odoo>

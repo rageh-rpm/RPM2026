@@ -1,0 +1,663 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========================================== -->
+    <!-- MISSION TYPE -->
+    <!-- ========================================== -->
+
+    <!-- List View -->
+<!-- List View - UPDATED -->
+<record id="view_hr_mission_type_tree" model="ir.ui.view">
+    <field name="name">hr.mission.type.tree</field>
+    <field name="model">hr.mission.type</field>
+    <field name="arch" type="xml">
+        <list string="Mission Types">
+            <field name="code"/>
+            <field name="name"/>
+            <field name="color" widget="color_picker" optional="hide"/>
+            <field name="apply_allowance" optional="show"/>
+            <field name="daily_allowance" optional="show" widget="monetary"/>
+            <field name="currency_id" optional="show"/>
+            <field name="approval_level" optional="hide"/>
+            <field name="max_duration" optional="show"/>
+            <field name="requires_approval" optional="hide"/>
+            <field name="create_time_off" optional="hide"/>
+            <field name="time_off_type_id" optional="hide"/>
+            <field name="mission_count" optional="hide"/>
+            <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            <field name="active" column_invisible="1"/>
+        </list>
+    </field>
+</record>
+
+<!-- Form View - UPDATED -->
+<!-- Form View - CORRECTED -->
+<record id="view_hr_mission_type_form" model="ir.ui.view">
+    <field name="name">hr.mission.type.form</field>
+    <field name="model">hr.mission.type</field>
+    <field name="arch" type="xml">
+        <form string="Mission Type">
+            <header>
+                <button name="toggle_active"
+                        string="Archive"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="not active"/>
+                <button name="toggle_active"
+                        string="Unarchive"
+                        type="object"
+                        class="btn-secondary"
+                        invisible="active"/>
+            </header>
+            <sheet>
+                <!-- Smart Buttons -->
+                <div class="oe_button_box" name="button_box">
+                    <button name="action_view_missions"
+                            type="object"
+                            class="oe_stat_button"
+                            icon="fa-plane"
+                            invisible="mission_count == 0">
+                        <field name="mission_count" widget="statinfo" string="Missions"/>
+                    </button>
+                </div>
+
+                <!-- Archived Ribbon -->
+                <widget name="web_ribbon"
+                        title="Archived"
+                        bg_color="text-bg-danger"
+                        invisible="active"/>
+
+                <!-- Title -->
+                <div class="oe_title">
+                    <label for="name" string="Mission Type"/>
+                    <h1>
+                        <field name="name"
+                               placeholder="e.g., Business Trip, Field Visit, Training"/>
+                    </h1>
+                </div>
+
+                <!-- Basic Information -->
+                <group>
+                    <group string="Basic Information">
+                        <field name="code" placeholder="e.g., BT, FV, TR"/>
+                        <field name="color" widget="color_picker"/>
+                        <field name="company_id" groups="base.group_multi_company"/>
+                        <field name="active" invisible="1"/>
+                    </group>
+                    <group string="Duration Limits">
+                        <field name="min_duration"
+                               widget="float_time"
+                               help="Minimum duration in hours"/>
+                        <field name="max_duration"
+                               help="Maximum duration in days (0 = no limit)"/>
+                    </group>
+                </group>
+
+                <!-- Notebook for organized sections -->
+                <notebook>
+                    <!-- Approval Settings Page -->
+                    <page string="Approval Settings">
+                        <group>
+                            <group>
+                                <field name="requires_approval"/>
+                                <field name="approval_level"
+                                       invisible="not requires_approval"
+                                       required="requires_approval"/>
+                            </group>
+                            <group>
+                                <label for="approval_level" invisible="not requires_approval"/>
+                                <div invisible="not requires_approval">
+                                    <p class="text-muted">
+                                        <span invisible="approval_level != 'manager'">
+                                            Requires Manager approval only
+                                        </span>
+                                        <span invisible="approval_level != 'hr'">
+                                            Requires Manager and HR approval
+                                        </span>
+                                        <span invisible="approval_level != 'full'">
+                                            Requires full approval chain (Manager → Sector Head → HR → Finance)
+                                        </span>
+                                    </p>
+                                </div>
+                            </group>
+                        </group>
+                    </page>
+
+                    <!-- Allowance Configuration Page -->
+                    <page string="Allowance Configuration">
+                        <group>
+                            <group>
+                                <field name="apply_allowance"/>
+                                <field name="daily_allowance"
+                                       invisible="not apply_allowance"
+                                       required="apply_allowance"
+                                       widget="monetary"
+                                       options="{'currency_field': 'currency_id'}"/>
+                                <field name="currency_id"
+                                       invisible="not apply_allowance"
+                                       required="apply_allowance"/>
+                            </group>
+                            <group invisible="not apply_allowance">
+                                <div class="alert alert-info" role="alert">
+                                    <i class="fa fa-info-circle"/>
+                                    Daily allowance will be automatically calculated based on mission duration.
+                                </div>
+                            </group>
+                        </group>
+                    </page>
+
+                    <!-- Time Off Integration Page - CORRECTED -->
+                    <page string="Time Off Integration">
+                        <group>
+                            <group>
+                                <field name="create_time_off"/>
+                                <field name="time_off_required"
+                                       invisible="not create_time_off"/>
+                                <field name="time_off_type_id"
+                                       invisible="not create_time_off"
+                                       required="time_off_required"
+                                       domain="['|', ('company_id', '=', False), ('company_id', '=', company_id)]"
+                                       options="{'no_create': True, 'no_create_edit': True}"/>
+                            </group>
+                            <group>
+                                <div class="alert alert-warning"
+                                     role="alert"
+                                     invisible="not create_time_off or time_off_type_id">
+                                    <i class="fa fa-exclamation-triangle"/>
+                                    <strong>Warning:</strong> No Time Off Type is configured.
+                                    Time off records will not be created automatically.
+                                </div>
+                                <div class="alert alert-success"
+                                     role="alert"
+                                     invisible="not create_time_off or not time_off_type_id">
+                                    <i class="fa fa-check-circle"/>
+                                    <strong>Configured:</strong> Time off records will be created automatically
+                                    when missions are approved by HR.
+                                </div>
+                            </group>
+                        </group>
+                    </page>
+
+                    <!-- Additional Notes Page -->
+                    <page string="Notes">
+                        <group>
+                            <field name="note"
+                                   nolabel="1"
+                                   placeholder="Add any additional notes, guidelines, or requirements for this mission type..."/>
+                        </group>
+                    </page>
+                </notebook>
+            </sheet>
+
+            <!-- Chatter -->
+            <chatter/>
+
+        </form>
+    </field>
+</record>
+
+<!-- Search View - UPDATED -->
+<record id="view_hr_mission_type_search" model="ir.ui.view">
+    <field name="name">hr.mission.type.search</field>
+    <field name="model">hr.mission.type</field>
+    <field name="arch" type="xml">
+        <search string="Mission Types">
+            <field name="name"/>
+            <field name="code"/>
+            <field name="time_off_type_id"/>
+
+            <!-- Quick Filters -->
+            <filter string="With Allowance"
+                    name="with_allowance"
+                    domain="[('apply_allowance', '=', True)]"/>
+            <filter string="Requires Approval"
+                    name="requires_approval"
+                    domain="[('requires_approval', '=', True)]"/>
+            <filter string="Creates Time Off"
+                    name="creates_timeoff"
+                    domain="[('create_time_off', '=', True)]"/>
+
+            <separator/>
+            <filter string="Active"
+                    name="active"
+                    domain="[('active', '=', True)]"/>
+            <filter string="Archived"
+                    name="inactive"
+                    domain="[('active', '=', False)]"/>
+
+            <!-- Approval Level Filters -->
+            <separator/>
+            <filter string="Manager Approval"
+                    name="manager_approval"
+                    domain="[('approval_level', '=', 'manager')]"/>
+            <filter string="HR Approval"
+                    name="hr_approval"
+                    domain="[('approval_level', '=', 'hr')]"/>
+            <filter string="Full Approval Chain"
+                    name="full_approval"
+                    domain="[('approval_level', '=', 'full')]"/>
+
+            <!-- Group By Options -->
+            <group expand="0" string="Group By">
+                <filter string="Approval Level"
+                        name="group_approval_level"
+                        context="{'group_by': 'approval_level'}"/>
+                <filter string="Apply Allowance"
+                        name="group_apply_allowance"
+                        context="{'group_by': 'apply_allowance'}"/>
+                <filter string="Requires Approval"
+                        name="group_requires_approval"
+                        context="{'group_by': 'requires_approval'}"/>
+                <filter string="Create Time Off"
+                        name="group_create_timeoff"
+                        context="{'group_by': 'create_time_off'}"/>
+                <filter string="Company"
+                        name="group_company"
+                        context="{'group_by': 'company_id'}"
+                        groups="base.group_multi_company"/>
+            </group>
+
+            <!-- Search Panel (Odoo 18 Feature) -->
+            <searchpanel>
+                <field name="approval_level"
+                       icon="fa-check-circle"
+                       enable_counters="1"/>
+                <field name="company_id"
+                       icon="fa-building"
+                       groups="base.group_multi_company"
+                       enable_counters="1"/>
+            </searchpanel>
+        </search>
+    </field>
+</record>
+
+<!-- Kanban View - NEW (Optional but recommended) -->
+<record id="view_hr_mission_type_kanban" model="ir.ui.view">
+    <field name="name">hr.mission.type.kanban</field>
+    <field name="model">hr.mission.type</field>
+    <field name="arch" type="xml">
+        <kanban>
+            <field name="id"/>
+            <field name="name"/>
+            <field name="code"/>
+            <field name="color"/>
+            <field name="apply_allowance"/>
+            <field name="daily_allowance"/>
+            <field name="currency_id"/>
+            <field name="create_time_off"/>
+            <field name="mission_count"/>
+            <field name="active"/>
+
+            <templates>
+                <t t-name="kanban-box">
+                    <div t-attf-class="oe_kanban_color_#{kanban_getcolor(record.color.raw_value)} oe_kanban_card oe_kanban_global_click">
+                        <div class="oe_kanban_content">
+                            <!-- Header -->
+                            <div class="o_kanban_record_top">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title">
+                                        <field name="name"/>
+                                    </strong>
+                                    <span t-if="record.code.raw_value" class="badge badge-pill badge-info">
+                                        <field name="code"/>
+                                    </span>
+                                </div>
+                                <div class="o_kanban_record_right">
+                                    <span t-if="record.apply_allowance.raw_value"
+                                          class="badge badge-success"
+                                          title="Daily Allowance Enabled">
+                                        <i class="fa fa-money"/>
+                                        <field name="daily_allowance" widget="monetary"/>
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Body -->
+                            <div class="o_kanban_record_body">
+                                <div t-if="record.create_time_off.raw_value">
+                                    <i class="fa fa-calendar text-success"/> Creates Time Off
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div class="o_kanban_record_bottom">
+                                <div class="oe_kanban_bottom_left">
+                                    <span class="badge badge-info">
+                                        <i class="fa fa-plane"/>
+                                        <field name="mission_count"/> Missions
+                                    </span>
+                                </div>
+                                <div class="oe_kanban_bottom_right">
+                                    <field name="active" widget="boolean_toggle"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </templates>
+        </kanban>
+    </field>
+</record>
+
+<!-- Update Action to include Kanban view -->
+<record id="action_hr_mission_type" model="ir.actions.act_window">
+    <field name="name">Mission Types</field>
+    <field name="res_model">hr.mission.type</field>
+    <field name="view_mode">kanban,list,form</field>
+    <field name="context">{'search_default_active': 1}</field>
+    <field name="help" type="html">
+        <p class="o_view_nocontent_smiling_face">
+            Create your first Mission Type
+        </p>
+        <p>
+            Mission types define the different categories of missions in your organization with specific approval workflows and allowances.
+        </p>
+    </field>
+</record>
+
+    <!-- Action -->
+    <record id="action_hr_mission_type" model="ir.actions.act_window">
+        <field name="name">Mission Types</field>
+        <field name="res_model">hr.mission.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Mission Type
+            </p>
+            <p>
+                Mission types define the different categories of missions in your organization.
+            </p>
+        </field>
+    </record>
+
+    <!-- ========================================== -->
+    <!-- ACCOMMODATION TYPE -->
+    <!-- ========================================== -->
+
+    <!-- List View -->
+    <record id="view_hr_mission_accommodation_type_tree" model="ir.ui.view">
+        <field name="name">hr.mission.accommodation.type.tree</field>
+        <field name="model">hr.mission.accommodation.type</field>
+        <field name="arch" type="xml">
+            <list string="Accommodation Types">
+                <field name="name"/>
+                <field name="apply_allowance"/>
+                <field name="fixed_amount_in_country" optional="show"/>
+                <field name="fixed_amount_abroad" optional="show"/>
+                <field name="active" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_hr_mission_accommodation_type_form" model="ir.ui.view">
+        <field name="name">hr.mission.accommodation.type.form</field>
+        <field name="model">hr.mission.accommodation.type</field>
+        <field name="arch" type="xml">
+            <form string="Accommodation Type">
+                <header>
+                    <button name="toggle_active" string="Archive" type="object" class="btn-secondary" invisible="not active"/>
+                    <button name="toggle_active" string="Unarchive" type="object" class="btn-secondary" invisible="active"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <group>
+                            <field name="name" placeholder="e.g., Hotel, Guest House, Camping"/>
+                            <field name="apply_allowance"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="fixed_amount_in_country" invisible="not apply_allowance"/>
+                            <field name="fixed_amount_abroad" invisible="not apply_allowance"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="Additional notes about this accommodation type..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_hr_mission_accommodation_type_search" model="ir.ui.view">
+        <field name="name">hr.mission.accommodation.type.search</field>
+        <field name="model">hr.mission.accommodation.type</field>
+        <field name="arch" type="xml">
+            <search string="Accommodation Types">
+                <field name="name"/>
+                <filter string="With Allowance" name="with_allowance" domain="[('apply_allowance', '=', True)]"/>
+                <separator/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Apply Allowance" name="group_apply_allowance" context="{'group_by': 'apply_allowance'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_hr_mission_accommodation_type" model="ir.actions.act_window">
+        <field name="name">Accommodation Types</field>
+        <field name="res_model">hr.mission.accommodation.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Accommodation Type
+            </p>
+            <p>
+                Define accommodation options available for missions with their respective allowances.
+            </p>
+        </field>
+    </record>
+
+    <!-- ========================================== -->
+    <!-- TRANSPORT TYPE -->
+    <!-- ========================================== -->
+
+    <!-- List View -->
+    <record id="view_hr_mission_transport_type_tree" model="ir.ui.view">
+        <field name="name">hr.mission.transport.type.tree</field>
+        <field name="model">hr.mission.transport.type</field>
+        <field name="arch" type="xml">
+            <list string="Transport Types">
+                <field name="name"/>
+                <field name="personal_vehicle" optional="show"/>
+                <field name="apply_allowance"/>
+                <field name="fixed_amount_in_country" optional="show"/>
+                <field name="fixed_amount_abroad" optional="show"/>
+                <field name="active" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_hr_mission_transport_type_form" model="ir.ui.view">
+        <field name="name">hr.mission.transport.type.form</field>
+        <field name="model">hr.mission.transport.type</field>
+        <field name="arch" type="xml">
+            <form string="Transport Type">
+                <header>
+                    <button name="toggle_active" string="Archive" type="object" class="btn-secondary" invisible="not active"/>
+                    <button name="toggle_active" string="Unarchive" type="object" class="btn-secondary" invisible="active"/>
+                </header>
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <group>
+                            <field name="name" placeholder="e.g., Car, Flight, Train, Bus"/>
+                            <field name="personal_vehicle"/>
+                            <field name="apply_allowance"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="fixed_amount_in_country" invisible="not apply_allowance"/>
+                            <field name="fixed_amount_abroad" invisible="not apply_allowance"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="Additional notes about this transport type..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_hr_mission_transport_type_search" model="ir.ui.view">
+        <field name="name">hr.mission.transport.type.search</field>
+        <field name="model">hr.mission.transport.type</field>
+        <field name="arch" type="xml">
+            <search string="Transport Types">
+                <field name="name"/>
+                <filter string="Personal Vehicle" name="personal_vehicle" domain="[('personal_vehicle', '=', True)]"/>
+                <filter string="With Allowance" name="with_allowance" domain="[('apply_allowance', '=', True)]"/>
+                <separator/>
+                <filter string="Active" name="active" domain="[('active', '=', True)]"/>
+                <filter string="Archived" name="inactive" domain="[('active', '=', False)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Personal Vehicle" name="group_personal_vehicle" context="{'group_by': 'personal_vehicle'}"/>
+                    <filter string="Apply Allowance" name="group_apply_allowance" context="{'group_by': 'apply_allowance'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_hr_mission_transport_type" model="ir.actions.act_window">
+        <field name="name">Transport Types</field>
+        <field name="res_model">hr.mission.transport.type</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Transport Type
+            </p>
+            <p>
+                Define transportation methods available for missions with their respective rates.
+            </p>
+        </field>
+    </record>
+
+    <!-- ========================================== -->
+    <!-- MISSION ALLOWANCE -->
+    <!-- ========================================== -->
+
+    <!-- List View -->
+    <record id="view_hr_mission_allowance_tree" model="ir.ui.view">
+        <field name="name">hr.mission.allowance.tree</field>
+        <field name="model">hr.mission.allowance</field>
+        <field name="arch" type="xml">
+            <list string="Mission Allowances" editable="bottom">
+                <field name="allowance_type"/>
+                <field name="name"/>
+                <field name="amount"/>
+                <field name="quantity"/>
+                <field name="total_amount"/>
+                <field name="mission_id" column_invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_hr_mission_allowance_form" model="ir.ui.view">
+        <field name="name">hr.mission.allowance.form</field>
+        <field name="model">hr.mission.allowance</field>
+        <field name="arch" type="xml">
+            <form string="Mission Allowance">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="mission_id" readonly="1"/>
+                            <field name="allowance_type"/>
+                            <field name="name"/>
+                        </group>
+                        <group>
+                            <field name="amount"/>
+                            <field name="quantity"/>
+                            <field name="total_amount"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_hr_mission_allowance_search" model="ir.ui.view">
+        <field name="name">hr.mission.allowance.search</field>
+        <field name="model">hr.mission.allowance</field>
+        <field name="arch" type="xml">
+            <search string="Mission Allowances">
+                <field name="name"/>
+                <field name="mission_id"/>
+                <field name="allowance_type"/>
+                <filter string="Accommodation" name="accommodation" domain="[('allowance_type', '=', 'accommodation')]"/>
+                <filter string="Transportation" name="transportation" domain="[('allowance_type', '=', 'transportation')]"/>
+                <filter string="Daily Allowance" name="daily" domain="[('allowance_type', '=', 'daily')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Mission" name="group_mission" context="{'group_by': 'mission_id'}"/>
+                    <filter string="Type" name="group_type" context="{'group_by': 'allowance_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_hr_mission_allowance" model="ir.actions.act_window">
+        <field name="name">Mission Allowances</field>
+        <field name="res_model">hr.mission.allowance</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No mission allowances yet
+            </p>
+            <p>
+                Allowances are typically managed from the mission form.
+            </p>
+        </field>
+    </record>
+
+    <!-- ========================================== -->
+    <!-- CONFIGURATION MENU STRUCTURE -->
+    <!-- ========================================== -->
+
+    <!-- Configuration Submenu -->
+    <menuitem id="menu_hr_mission_configuration"
+              name="Configuration"
+              parent="hr_missions_module.menu_hr_mission_root"
+              sequence="100"/>
+
+    <!-- Mission Types Menu -->
+    <menuitem id="menu_hr_mission_type"
+              name="Mission Types"
+              parent="menu_hr_mission_configuration"
+              action="action_hr_mission_type"
+              sequence="10"/>
+
+    <!-- Accommodation Types Menu -->
+    <menuitem id="menu_hr_mission_accommodation_type"
+              name="Accommodation Types"
+              parent="menu_hr_mission_configuration"
+              action="action_hr_mission_accommodation_type"
+              sequence="20"/>
+
+    <!-- Transport Types Menu -->
+    <menuitem id="menu_hr_mission_transport_type"
+              name="Transport Types"
+              parent="menu_hr_mission_configuration"
+              action="action_hr_mission_transport_type"
+              sequence="30"/>
+
+    <!-- Optional: Mission Allowances Menu -->
+    <menuitem id="menu_hr_mission_allowance"
+              name="Allowances"
+              parent="menu_hr_mission_configuration"
+              action="action_hr_mission_allowance"
+              sequence="40"
+              groups="base.group_no_one"/>
+
+</odoo>

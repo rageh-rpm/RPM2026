@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_treasury_request_user,treasury.request.user,model_treasury_request,group_treasury_request_user,1,1,1,1
+access_treasury_request_manager,treasury.request.manager,model_treasury_request,group_treasury_manager,1,1,0,0
+access_treasury_request_officer,treasury.request.officer,model_treasury_request,group_treasury_officer,1,1,1,0
+access_treasury_request_exec,treasury.request.exec,model_treasury_request,group_treasury_exec,1,1,1,0
+access_treasury_request_admin,treasury.request.admin,model_treasury_request,group_treasury_admin,1,1,1,1
+access_treasury_request_reject_wizard,treasury.request.reject.wizard,model_treasury_request_reject_wizard,group_treasury_request_user,1,1,1,1

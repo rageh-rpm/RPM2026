@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Rate Change Wizard Form -->
+    <record id="view_overdraft_rate_change_wizard_form" model="ir.ui.view">
+        <field name="name">overdraft.rate.change.wizard.form</field>
+        <field name="model">overdraft.rate.change.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Change Interest Rate">
+                <group>
+                    <group string="Facility Information">
+                        <field name="facility_id" readonly="1" force_save="1"/>
+                        <field name="facility_name" readonly="1"/>
+                    </group>
+                    <group string="Rate Change">
+                        <field name="current_rate" readonly="1"/>
+                        <field name="new_rate"/>
+                        <field name="effective_date"/>
+                    </group>
+                </group>
+
+                <group string="Reason for Change">
+                    <field name="reason" nolabel="1"
+                           placeholder="e.g., Central bank rate adjustment, contract renewal, market conditions..."/>
+                </group>
+
+                <group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Impact:</strong>
+                        <p>
+                            This rate change will affect
+                            <field name="affected_payments_count" class="fw-bold" readonly="1"/>
+                            payment(s) with pending settlements.
+                        </p>
+                        <p class="mb-0">
+                            Interest will be automatically recalculated for payments where the interest period spans across this effective date.
+                        </p>
+                    </div>
+                </group>
+
+                <footer>
+                    <button string="Apply Rate Change"
+                            name="action_apply_rate_change"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

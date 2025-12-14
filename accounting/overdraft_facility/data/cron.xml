@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Monthly Interest Accrual Cron Job -->
+        <record id="ir_cron_monthly_interest_accrual" model="ir.cron">
+            <field name="name">Overdraft: Generate Monthly Interest Accruals</field>
+            <field name="model_id" ref="model_overdraft_facility"/>
+            <field name="state">code</field>
+            <field name="code">model.action_generate_monthly_interest_accruals()</field>
+<!--            <field name="user_id" ref="base.user_root"/>-->
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+<!--            <field name="doall" eval="False"/>-->
+            <field name="active" eval="True"/>
+            <field name="priority">5</field>
+        </record>
+
+        <!-- Settlement Interest Finalization Cron (Optional) -->
+        <record id="ir_cron_settlement_interest_finalization" model="ir.cron">
+            <field name="name">Overdraft: Finalize Interest on Settlement</field>
+            <field name="model_id" ref="model_overdraft_settlement"/>
+            <field name="state">code</field>
+            <field name="code">model._finalize_interest_on_settlements()</field>
+<!--            <field name="user_id" ref="base.user_root"/>-->
+            <field name="interval_number">1</field>
+            <field name="interval_type">hours</field>
+<!--            <field name="doall" eval="False"/>-->
+            <field name="active" eval="True"/>
+            <field name="priority">10</field>
+        </record>
+
+    </data>
+</odoo>

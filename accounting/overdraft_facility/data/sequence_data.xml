@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Overdraft Facility Sequence -->
+        <record id="seq_overdraft_facility" model="ir.sequence">
+            <field name="name">Overdraft Facility</field>
+            <field name="code">overdraft.facility</field>
+            <field name="prefix">ODF/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Overdraft Settlement Sequence -->
+        <record id="seq_overdraft_settlement" model="ir.sequence">
+            <field name="name">Overdraft Settlement</field>
+            <field name="code">overdraft.settlement</field>
+            <field name="prefix">ODS/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+                <!-- Overdraft Interest Accrual Sequence -->
+        <record id="seq_overdraft_interest_accrual" model="ir.sequence">
+            <field name="name">Overdraft Interest Accrual</field>
+            <field name="code">overdraft.interest.accrual</field>
+            <field name="prefix">OIA/</field>
+            <field name="padding">5</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+
+    </data>
+</odoo>

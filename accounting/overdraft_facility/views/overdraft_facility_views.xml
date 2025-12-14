@@ -1,0 +1,304 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Overdraft Facility List View -->
+    <record id="view_overdraft_facility_list" model="ir.ui.view">
+        <field name="name">overdraft.facility.list</field>
+        <field name="model">overdraft.facility</field>
+        <field name="arch" type="xml">
+            <list string="Overdraft Facilities"
+                  decoration-success="state=='active'"
+                  decoration-muted="state=='closed'"
+                  decoration-danger="state=='cancelled'">
+                <field name="name"/>
+                <field name="journal_id"/>
+                <field name="currency_id"/>
+                <field name="date_from"/>
+                <field name="date_to"/>
+                <field name="credit_limit" widget="monetary"/>
+                <field name="current_outstanding" widget="monetary"/>
+                <field name="available_credit" widget="monetary"/>
+                <field name="utilization_percentage" widget="percentage"/>
+                <field name="total_interest_accrued" widget="monetary" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-success="state=='active'"
+                       decoration-info="state=='draft'"
+                       decoration-muted="state=='closed'"
+                       decoration-danger="state=='cancelled'"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Overdraft Facility Form View -->
+    <record id="view_overdraft_facility_form" model="ir.ui.view">
+        <field name="name">overdraft.facility.form</field>
+        <field name="model">overdraft.facility</field>
+        <field name="arch" type="xml">
+            <form string="Overdraft Facility">
+                <header>
+                    <button name="action_activate" string="Activate" type="object"
+                            invisible="state != 'draft'" class="oe_highlight"/>
+                    <button name="action_close" string="Close Facility" type="object"
+                            invisible="state != 'active'" class="oe_highlight"/>
+                    <button name="action_cancel" string="Cancel" type="object"
+                            invisible="state not in ['draft']"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,active,closed"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_payments" type="object" class="oe_stat_button" icon="fa-credit-card">
+                            <field name="payment_count" widget="statinfo" string="Payments"/>
+                        </button>
+                        <button name="action_view_settlements" type="object" class="oe_stat_button" icon="fa-exchange">
+                            <field name="settlement_count" widget="statinfo" string="Settlements"/>
+                        </button>
+                        <button name="action_view_interest_accruals" type="object" class="oe_stat_button" icon="fa-percent">
+                            <field name="total_interest_entries" widget="statinfo" string="Interest"/>
+                        </button>
+
+                        <button name="action_view_rate_history" type="object"
+                                class="oe_stat_button" icon="fa-line-chart"
+                                invisible="rate_change_count == 0">
+                            <field name="rate_change_count" widget="statinfo" string="Rate Changes"/>
+                        </button>
+
+                        <button name="action_change_interest_rate" type="object"
+                                string="Change Rate"
+                                class="btn-primary"
+                                invisible="state != 'active'"/>
+
+                        <button name="action_open_settlement_wizard" type="object"
+                                string="Create Settlement"
+                                class="oe_highlight"
+                                invisible="state != 'active' or pending_settlement_count == 0">
+                            <field name="pending_settlement_count" invisible="1"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group name="facility_info" string="Facility Information">
+                            <field name="journal_id" options="{'no_create': True}"/>
+                            <field name="currency_id" options="{'no_create': True}"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="date_from"/>
+                            <field name="date_to"/>
+                            <field name="days_count" readonly="1"/>
+                        </group>
+                        <group name="limit_info" string="Credit Limit &amp; Settlement">
+                            <field name="credit_limit" widget="monetary"/>
+                            <field name="settlement_due_days"/>
+                        </group>
+                    </group>
+
+                    <group name="interest_config" string="Interest Configuration">
+                        <group>
+                            <field name="annual_interest_rate"/>
+                            <field name="daily_interest_rate" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="interest_journal_id" options="{'no_create': True}"/>
+                            <field name="interest_expense_account_id" options="{'no_create': True}"/>
+                            <field name="interest_payable_account_id" options="{'no_create': True}"/>
+                        </group>
+                    </group>
+
+                    <group name="usage_summary">
+                        <group string="Payments Breakdown" class="bg-info">
+                            <label for="total_paid_payments" string="Paid Payments"/>
+                            <div class="o_row">
+                                <field name="total_paid_payments" widget="monetary" readonly="1"/>
+                                <span class="text-muted"><field name="paid_payment_count" readonly="1"/> payments</span>
+                            </div>
+                            <label for="total_in_process_payments" string="In Process"/>
+                            <div class="o_row">
+                                <field name="total_in_process_payments" widget="monetary" readonly="1"/>
+                                <span class="text-muted"><field name="in_process_payment_count" readonly="1"/> payments</span>
+                            </div>
+                            <field name="total_payments" widget="monetary" readonly="1" class="fw-bold"/>
+                            <field name="total_settlements" widget="monetary" readonly="1"/>
+                            <field name="current_outstanding" widget="monetary" readonly="1" class="fw-bold"/>
+                        </group>
+                        <group string="Available &amp; Interest" class="bg-success">
+                            <field name="available_credit" widget="monetary" readonly="1" class="fw-bold"/>
+                            <field name="utilization_amount" widget="monetary" readonly="1"/>
+                            <field name="utilization_percentage" readonly="1"/>
+                            <separator string="Interest Summary" colspan="2"/>
+                            <field name="total_interest_accrued" widget="monetary" readonly="1"/>
+                            <field name="total_interest_entries" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Payments" name="payments">
+                            <field name="payment_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date"/>
+                                    <field name="actual_transaction_date" optional="show"/>
+                                    <field name="partner_id"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="settlement_due_date" optional="show"/>
+                                    <field name="total_interest_accrued" sum="Total Interest" optional="hide"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Rate History" name="rate_history">
+                            <field name="interest_rate_history_ids" readonly="1">
+                                <list>
+                                    <field name="effective_date"/>
+                                    <field name="annual_interest_rate"/>
+                                    <field name="daily_interest_rate"/>
+                                    <field name="previous_rate" optional="show"/>
+                                    <field name="reason"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Settlements" name="settlements">
+                            <field name="settlement_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="settlement_date"/>
+                                    <field name="source_journal_id"/>
+                                    <field name="amount" sum="Total"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Interest Accruals" name="interest_accruals">
+                            <field name="interest_line_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="payment_id"/>
+                                    <field name="accrual_date"/>
+                                    <field name="period_from"/>
+                                    <field name="period_to"/>
+                                    <field name="days_count"/>
+                                    <field name="principal_amount" sum="Total Principal"/>
+                                    <field name="interest_amount" sum="Total Interest"/>
+                                    <field name="state" widget="badge"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Notes" name="notes">
+                            <field name="notes" placeholder="Add notes here..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Overdraft Facility Kanban View -->
+    <record id="view_overdraft_facility_kanban" model="ir.ui.view">
+        <field name="name">overdraft.facility.kanban</field>
+        <field name="model">overdraft.facility</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" sample="1">
+                <field name="name"/>
+                <field name="journal_id"/>
+                <field name="currency_id"/>
+                <field name="credit_limit"/>
+                <field name="current_outstanding"/>
+                <field name="available_credit"/>
+                <field name="utilization_percentage"/>
+                <field name="total_interest_accrued"/>
+                <field name="state"/>
+                <field name="color"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_color_#{kanban_getcolor(record.color.raw_value)} oe_kanban_card oe_kanban_global_click">
+                            <div class="o_kanban_record_top">
+                                <div class="o_kanban_record_headings">
+                                    <strong class="o_kanban_record_title"><field name="name"/></strong>
+                                    <div><field name="journal_id"/> - <field name="currency_id"/></div>
+                                </div>
+                                <field name="state" widget="label"
+                                       decoration-success="state=='active'"
+                                       decoration-info="state=='draft'"/>
+                            </div>
+                            <div class="o_kanban_record_body">
+                                <div>
+                                    <span>Credit Limit: </span>
+                                    <field name="credit_limit" widget="monetary"/>
+                                </div>
+                                <div>
+                                    <span>Outstanding: </span>
+                                    <field name="current_outstanding" widget="monetary"/>
+                                </div>
+                                <div>
+                                    <span>Available: </span>
+                                    <field name="available_credit" widget="monetary"/>
+                                </div>
+                                <div>
+                                    <span>Interest: </span>
+                                    <field name="total_interest_accrued" widget="monetary"/>
+                                </div>
+                                <div class="mt-2">
+                                    <field name="utilization_percentage" widget="progressbar"/>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Overdraft Facility Search View -->
+    <record id="view_overdraft_facility_search" model="ir.ui.view">
+        <field name="name">overdraft.facility.search</field>
+        <field name="model">overdraft.facility</field>
+        <field name="arch" type="xml">
+            <search string="Overdraft Facilities">
+                <field name="name"/>
+                <field name="journal_id"/>
+                <field name="currency_id"/>
+                <separator/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Active" name="active" domain="[('state', '=', 'active')]"/>
+                <filter string="Closed" name="closed" domain="[('state', '=', 'closed')]"/>
+                <separator/>
+                <filter string="Current Period" name="current_period"
+                        domain="[('date_from', '&lt;=', context_today().strftime('%Y-%m-%d')),
+                                 ('date_to', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                <separator/>
+                <filter string="With Interest" name="with_interest"
+                        domain="[('annual_interest_rate', '&gt;', 0)]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Journal" name="group_journal" context="{'group_by': 'journal_id'}"/>
+                    <filter string="Currency" name="group_currency" context="{'group_by': 'currency_id'}"/>
+                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Start Date" name="group_date_from" context="{'group_by': 'date_from'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Overdraft Facility Action -->
+    <record id="action_overdraft_facility" model="ir.actions.act_window">
+        <field name="name">Overdraft Facilities</field>
+        <field name="res_model">overdraft.facility</field>
+        <field name="view_mode">list,kanban,form</field>
+        <field name="context">{'search_default_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first Overdraft Facility
+            </p>
+            <p>
+                Overdraft facilities allow you to manage credit limits with time periods and interest calculations.
+            </p>
+        </field>
+    </record>
+
+
+
+</odoo>

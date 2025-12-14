@@ -17,14 +17,24 @@ class HrMission(models.Model):
                        default=lambda self: self.env['ir.sequence'].next_by_code('employee.mission') or '/')
     description = fields.Text(string='Mission Description', tracking=True)
     company_id = fields.Many2one('res.company', default=lambda self: self.env.company, required=True)
-    country_id = fields.Many2one('res.country',default=lambda self: self.env.company.country_id)
+    country_id = fields.Many2one('res.country', default=lambda self: self.env.company.country_id)
     employee_id = fields.Many2one('hr.employee', string='Employee', required=True,
                                   tracking=True, default=lambda self: self._default_employee())
     manager_id = fields.Many2one('hr.employee', string='Manager', tracking=True)
     department_id = fields.Many2one('hr.department', string='Department')
+
+    # Date/Time fields
     start_datetime = fields.Datetime(string='Start DateTime', required=True, tracking=True)
     end_datetime = fields.Datetime(string='End DateTime', required=True, tracking=True)
+
+    # Duration fields - UPDATED
+    duration_type = fields.Selection([
+        ('days', 'Days'),
+        ('hours', 'Hours')
+    ], string='Duration Type', default='days', required=True, tracking=True)
+
     duration_days = fields.Float(string='Duration (Days)', compute='_compute_duration', store=True)
+    duration_hours = fields.Float(string='Duration (Hours)', compute='_compute_duration', store=True)
 
     type_id = fields.Many2one('hr.mission.type', string='Mission Type', required=True)
     scope = fields.Selection([('in_country', 'In Country'), ('abroad', 'Abroad')],
@@ -74,6 +84,7 @@ class HrMission(models.Model):
     # Computed fields for UI
     can_edit = fields.Boolean(compute='_compute_can_edit')
     is_manager = fields.Boolean(compute='_compute_is_manager')
+    time_off_id = fields.Many2one('hr.leave', string='Related Time Off', readonly=True, copy=False)
 
     # Default methods
     @api.model
@@ -81,25 +92,48 @@ class HrMission(models.Model):
         employee = self.env['hr.employee'].search([('user_id', '=', self.env.uid)], limit=1)
         return employee.id if employee else False
 
-
-    # def _expand_states(self, states, domain, order):
-    #     # Always return all states in your selection field, preserving order
-    #     return [key for key, val in self._fields['state'].selection]
-
-    # Compute methods
-    @api.depends('start_datetime', 'end_datetime')
+    # Compute methods - UPDATED
+    @api.depends('start_datetime', 'end_datetime', 'employee_id', 'duration_type')
     def _compute_duration(self):
+        """Calculate duration in both days and hours"""
         for rec in self:
             if rec.start_datetime and rec.end_datetime:
-                start_dt = fields.Datetime.from_string(rec.start_datetime)
-                end_dt = fields.Datetime.from_string(rec.end_datetime)
-                if end_dt >= start_dt:
-                    duration = end_dt - start_dt
-                    rec.duration_days = duration.total_seconds() / (24 * 3600)
+                if rec.end_datetime <= rec.start_datetime:
+                    rec.duration_hours = 0.0
+                    rec.duration_days = 0.0
+                    continue
+
+                # Calculate total elapsed time
+                delta = rec.end_datetime - rec.start_datetime
+                total_seconds = delta.total_seconds()
+
+                # Calculate total hours (elapsed time, not working hours)
+                rec.duration_hours = total_seconds / 3600.0
+
+                # Calculate days based on calendar or default 24 hours
+                if rec.duration_type == 'hours':
+                    # For hourly missions, use working hours per day from calendar
+                    calendar = rec.employee_id.resource_calendar_id or rec.env.company.resource_calendar_id
+                    hours_per_day = calendar.hours_per_day if calendar else 8.0
+                    rec.duration_days = rec.duration_hours / hours_per_day
                 else:
-                    rec.duration_days = 0
+                    # For daily missions, use calendar days (24 hours per day)
+                    rec.duration_days = rec.duration_hours / 24.0
             else:
-                rec.duration_days = 0
+                rec.duration_hours = 0.0
+                rec.duration_days = 0.0
+
+
+    def _compute_duration_fallback(self):
+        """Fallback duration calculation when calendar is not available"""
+        self.ensure_one()
+        if self.start_datetime and self.end_datetime:
+            delta = self.end_datetime - self.start_datetime
+            self.duration_hours = delta.total_seconds() / 3600
+            self.duration_days = self.duration_hours / 8.0  # Assume 8 hours per day
+        else:
+            self.duration_hours = 0.0
+            self.duration_days = 0.0
 
     @api.depends('state_id', 'scope')
     def _compute_distance_fare(self):
@@ -116,7 +150,6 @@ class HrMission(models.Model):
         for rec in self:
             rec.grand_total = sum(rec.allowance_line_ids.mapped('total_amount'))
 
-    # For can_edit - since it depends on current user, we'll use minimal dependencies
     @api.depends('state', 'requested_by')
     def _compute_can_edit(self):
         current_user = self.env.user
@@ -126,33 +159,29 @@ class HrMission(models.Model):
                     rec.requested_by == current_user
             )
 
-    # For is_manager - optimized version
     @api.depends('employee_id.parent_id')
     def _compute_is_manager(self):
-        # Get current user's employee record once outside the loop
         current_employee = self.env['hr.employee'].search(
             [('user_id', '=', self.env.uid)], limit=1
         )
-
         for rec in self:
             rec.is_manager = bool(
                 current_employee and
                 rec.employee_id.parent_id and
                 current_employee.id == rec.employee_id.parent_id.id
             )
+
     # Constraints and validations
     @api.constrains('start_datetime', 'end_datetime')
     def _check_dates(self):
         for rec in self:
             if rec.start_datetime and rec.end_datetime:
-                start_dt = fields.Datetime.from_string(rec.start_datetime)
-                end_dt = fields.Datetime.from_string(rec.end_datetime)
-                if end_dt <= start_dt:
+                if rec.end_datetime <= rec.start_datetime:
                     raise ValidationError("End datetime must be after start datetime")
 
                 # Check if mission duration is reasonable (e.g., not more than 1 year)
                 max_duration = timedelta(days=365)
-                if (end_dt - start_dt) > max_duration:
+                if (rec.end_datetime - rec.start_datetime) > max_duration:
                     raise ValidationError("Mission duration cannot exceed 1 year")
 
     @api.constrains('employee_id', 'manager_id')
@@ -169,13 +198,11 @@ class HrMission(models.Model):
             self.department_id = self.employee_id.department_id
             self.manager_id = self.employee_id.parent_id
 
-    @api.onchange('type_id', 'accommodation_type_id', 'transportation_type_id', 'scope', 'state_id','duration_days')
+    @api.onchange('type_id', 'accommodation_type_id', 'transportation_type_id', 'scope', 'state_id', 'duration_days')
     def _onchange_generate_allowances(self):
         for rec in self:
             if rec.state in ['draft', 'rejected']:
                 lines = []
-
-                # Clear existing lines
                 rec.allowance_line_ids = [(5, 0, 0)]
 
                 # Add accommodation allowance
@@ -195,14 +222,14 @@ class HrMission(models.Model):
 
                 # Add transportation allowance
                 if (rec.transportation and rec.transportation_type_id and rec.transportation_type_id.apply_allowance):
-                    amt =0
+                    amt = 0
                     if rec.scope == 'abroad':
-                            amt= rec.transportation_type_id.fixed_amount_abroad
+                        amt = rec.transportation_type_id.fixed_amount_abroad
                     else:
                         if not rec.transportation_type_id.personal_vehicle:
-                                amt = rec.state_id.fixed_fare
+                            amt = rec.state_id.fixed_fare
                         else:
-                                amt = rec.transportation_type_id.fixed_amount_in_country*rec.state_id.distance_km
+                            amt = rec.transportation_type_id.fixed_amount_in_country * rec.state_id.distance_km
 
                     if amt > 0:
                         lines.append((0, 0, {
@@ -214,7 +241,7 @@ class HrMission(models.Model):
                         }))
 
                 # Add fixed fare for in-country missions
-                if rec.scope == 'in_country' and rec.fixed_fare and rec.fixed_fare > 0:
+                if rec.scope == 'in_country' and rec.fixed_fare and rec.fixed_fare > 0 and not rec.transportation_type_id.personal_vehicle and rec.transportation_type_id.apply_allowance:
                     lines.append((0, 0, {
                         'name': f'Fixed Fare - {rec.state_id.name}',
                         'allowance_type': 'fixed_fare',
@@ -242,15 +269,11 @@ class HrMission(models.Model):
         for rec in self:
             if not rec.manager_id:
                 raise UserError("Please set a manager before requesting approval")
-
             if not rec.start_datetime or not rec.end_datetime:
                 raise UserError("Please set both start and end datetime")
-
             if not rec.mission_purpose:
                 raise UserError("Please provide mission purpose")
-
-            rec._check_dates()  # Re-validate dates
-
+            rec._check_dates()
             rec.state = 'to_manager'
             rec.message_post(body="Mission request submitted for manager approval")
 
@@ -258,7 +281,6 @@ class HrMission(models.Model):
         for rec in self:
             if not self.env.user.has_group('hr.group_hr_manager'):
                 raise UserError("Only managers can perform this action")
-
             rec.approved_by_manager = self.env.user
             rec.state = 'to_sector_head'
             rec.message_post(body=f"Mission approved by manager: {self.env.user.name}")
@@ -270,6 +292,7 @@ class HrMission(models.Model):
             rec.message_post(body=f"Mission approved by sector head: {self.env.user.name}")
 
     def action_approve_hr(self):
+        """Approve mission by HR and create time off - UPDATED"""
         for rec in self:
             if not self.env.user.has_group('hr.group_hr_user'):
                 raise UserError("Only HR users can perform this action")
@@ -278,11 +301,14 @@ class HrMission(models.Model):
             rec.state = 'to_finance'
             rec.message_post(body=f"Mission approved by HR: {self.env.user.name}")
 
+            # Trigger time off creation if enabled
+            if rec.type_id.create_time_off:
+                rec._create_time_off_from_mission()
+
     def action_approve_finance(self):
         for rec in self:
             if not self.env.user.has_group('account.group_account_user'):
                 raise UserError("Only finance users can perform this action")
-
             rec.approved_by_finance = self.env.user
             rec.state = 'approved'
             rec.message_post(body=f"Mission approved by finance: {self.env.user.name}")
@@ -291,7 +317,6 @@ class HrMission(models.Model):
         for rec in self:
             if rec.state != 'approved':
                 raise UserError("Only approved missions can be set as paid")
-
             rec.state = 'paid'
             rec.message_post(body="Mission marked as paid")
 
@@ -299,7 +324,6 @@ class HrMission(models.Model):
         for rec in self:
             if rec.state in ['paid']:
                 raise UserError("Cannot cancel already paid missions")
-
             rec.state = 'cancelled'
             rec.message_post(body="Mission cancelled")
 
@@ -318,10 +342,112 @@ class HrMission(models.Model):
         for rec in self:
             if rec.state not in ['cancelled', 'rejected']:
                 raise UserError("Only cancelled or rejected missions can be reset to draft")
-
             rec.state = 'draft'
             rec.rejection_reason = False
             rec.message_post(body="Mission reset to draft")
+
+    # Time Off Integration Methods - UPDATED
+    def _create_time_off_from_mission(self):
+        """Create a time off record linked to this mission"""
+        self.ensure_one()
+
+        # Check if time off already exists
+        if self.time_off_id:
+            raise UserError("A time off record already exists for this mission.")
+
+        # Get time off type
+        time_off_type = self._get_mission_time_off_type()
+        if not time_off_type:
+            _logger.warning(f"No time off type configured for mission {self.name}")
+            return
+
+        # Determine request unit
+        request_unit = self._get_time_off_request_unit(time_off_type)
+
+        # Prepare time off values
+        time_off_vals = {
+            'name': f"Mission: {self.name}",
+            'holiday_status_id': time_off_type.id,
+            'employee_id': self.employee_id.id,
+            'request_date_from': self.start_datetime.date(),
+            'request_date_to': self.end_datetime.date(),
+            'date_from': self.start_datetime,
+            'date_to': self.end_datetime,
+            'request_unit_hours': request_unit == 'hour',
+            'request_unit_half': request_unit == 'half_day',
+            'notes': f"Auto-created from Mission: {self.name}\n"
+                     f"Mission Type: {self.type_id.name}\n"
+                     f"Duration: {self.duration_days:.2f} days ({self.duration_hours:.2f} hours)\n"
+                     f"Purpose: {self.mission_purpose or ''}",
+            'state': 'validate',  # Auto-approve since HR already approved
+        }
+
+        # Add duration based on request unit
+        if request_unit == 'hour':
+            time_off_vals['number_of_hours_display'] = self.duration_hours
+        else:
+            time_off_vals['number_of_days'] = self.duration_days
+
+        # Create the time off record
+        try:
+            time_off = self.env['hr.leave'].create(time_off_vals)
+            self.time_off_id = time_off.id
+
+            # Post messages
+            self.message_post(
+                body=f"Time Off created automatically: <a href='#' data-oe-model='hr.leave' data-oe-id='{time_off.id}'>{time_off.name}</a><br/>"
+                     f"Duration: {self.duration_days:.2f} days ({self.duration_hours:.2f} hours)",
+                subject="Time Off Created"
+            )
+
+            time_off.message_post(
+                body=f"Created from Mission: <a href='#' data-oe-model='hr.mission' data-oe-id='{self.id}'>{self.name}</a>",
+                subject="Linked to Mission"
+            )
+
+        except Exception as e:
+            _logger.error(f"Failed to create time off for mission {self.name}: {str(e)}")
+            raise UserError(f"Failed to create time off: {str(e)}")
+
+    def _get_mission_time_off_type(self):
+        """Get time off type for mission"""
+        # Priority 1: Mission type specific time off type
+        if self.type_id.time_off_type_id:
+            return self.type_id.time_off_type_id
+
+
+
+    def _get_time_off_request_unit(self, time_off_type):
+        """Determine the request unit based on mission and time off type configuration"""
+        # Check if time off type supports hours
+        if hasattr(time_off_type, 'request_unit') and time_off_type.request_unit == 'hour':
+            return 'hour'
+
+        # Check mission duration type
+        if self.duration_type == 'hours' and self.duration_hours < 8:
+            return 'hour'
+
+        # Check if it's a half day
+        if 0 < self.duration_days <= 0.5:
+            return 'half_day'
+
+        # Default to full days
+        return 'day'
+
+    def action_view_time_off(self):
+        """Smart button to view related time off"""
+        self.ensure_one()
+        if not self.time_off_id:
+            raise UserError("No time off record linked to this mission")
+
+        return {
+            'name': 'Time Off',
+            'type': 'ir.actions.act_window',
+            'res_model': 'hr.leave',
+            'view_mode': 'form',
+            'res_id': self.time_off_id.id,
+            'target': 'current',
+        }
 
     # Business logic methods
     def _get_allowance_summary(self):
@@ -347,25 +473,9 @@ class HrMission(models.Model):
             return True
         return False
 
-    # Override create and write methods for additional validation
+    # Override create and write methods
     @api.model_create_multi
     def create(self, vals_list):
-        # Prepare batch sequence generation
-        # sequence_code = 'employee.mission'
-        # sequence = self.env['ir.sequence'].sudo()
-        #
-        # # Generate sequences for all records that need one
-        # sequences_to_generate = [
-        #     i for i, vals in enumerate(vals_list)
-        #     if not vals.get('name') or vals.get('name') == '/'
-        # ]
-        #
-        # if sequences_to_generate:
-        #     sequences = sequence.next_by_code(sequence_code, len(sequences_to_generate))
-        #     for i, index in enumerate(sequences_to_generate):
-        #         vals_list[index]['name'] = sequences[i] if i < len(sequences) else sequence.next_by_code(sequence_code)
-
-        # Set managers and create records
         for vals in vals_list:
             if 'employee_id' in vals and not vals.get('manager_id'):
                 employee = self.env['hr.employee'].browse(vals['employee_id'])
@@ -401,4 +511,3 @@ class HrMission(models.Model):
             name = f"{record.name} - {record.employee_id.name}"
             result.append((record.id, name))
         return result
-

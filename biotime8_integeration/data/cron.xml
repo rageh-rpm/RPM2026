@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Cron #1: Night Shift at 2:00 AM -->
+        <record id="ir_cron_load_night_shift_punches" model="ir.cron">
+            <field name="name">Load Night Shift Punches (2:00 AM)</field>
+            <field name="model_id" ref="hr.model_hr_employee"/>
+            <field name="state">code</field>
+            <field name="code">model.load_night_shift_punches()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="False"/>
+        </record>
+
+        <!-- Cron #2: Daily at 10:00 AM -->
+        <record id="ir_cron_load_daily_punches" model="ir.cron">
+            <field name="name">Load Daily Punches (10:00 AM)</field>
+            <field name="model_id" ref="hr.model_hr_employee"/>
+            <field name="state">code</field>
+            <field name="code">model.load_daily_punches()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">days</field>
+            <field name="active" eval="False"/>
+        </record>
+    </data>
+</odoo>

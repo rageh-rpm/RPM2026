@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_treasury_request_reject_wizard_form" model="ir.ui.view">
+        <field name="name">treasury.request.reject.wizard.form</field>
+        <field name="model">treasury.request.reject.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reject Payment Request">
+                <group>
+                    <field name="request_id" invisible="1"/>
+                    <field name="rejection_stage" invisible="1"/>
+                    <field name="rejection_reason"
+                           placeholder="Please provide a clear reason for rejection..."/>
+                </group>
+                <footer>
+                    <button name="action_confirm_reject"
+                            type="object"
+                            string="Confirm Rejection"
+                            class="btn-primary"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

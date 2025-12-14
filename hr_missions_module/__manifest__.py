@@ -5,7 +5,7 @@
     'category': 'Human Resources',
     'author': 'DIGITS',
     'license': 'LGPL-3',
-    'depends': ['hr', 'hr_contract', 'hr_payroll', 'mail', 'account'],
+    'depends': ['hr', 'hr_contract', 'hr_payroll', 'mail', 'account','hr_holidays'],
     'data': [
         'data/sequence.xml',
         'security/hr_missions_security.xml',
@@ -13,7 +13,7 @@
         'views/hr_mission_views.xml',
         'views/res_state.xml',
         'views/report.xml',
-
+        'views/setting.xml',
 
     ],
     'installable': True,

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Settlement Allocation List View -->
+    <record id="view_overdraft_settlement_allocation_list" model="ir.ui.view">
+        <field name="name">overdraft.settlement.allocation.list</field>
+        <field name="model">overdraft.settlement.allocation</field>
+        <field name="arch" type="xml">
+            <list string="Settlement Allocations"
+                  decoration-success="state=='posted'"
+                  editable="bottom">
+                <field name="settlement_id" readonly="1"/>
+                <field name="payment_id"
+                       domain="[('overdraft_facility_id', '=', facility_id), ('state', 'in', ['posted', 'paid']), ('settlement_status', 'in', ['pending', 'partial'])]"
+                       options="{'no_create': True}"/>
+                <field name="facility_id" column_invisible="1"/>
+                <field name="payment_date" optional="show"/>
+                <field name="settlement_due_date" optional="show"/>
+                <field name="payment_amount" widget="monetary"/>
+                <field name="payment_outstanding" widget="monetary"/>
+                <field name="amount" widget="monetary" sum="Total Allocated"/>
+                <field name="currency_id" column_invisible="1"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Settlement Allocation Form View -->
+    <record id="view_overdraft_settlement_allocation_form" model="ir.ui.view">
+        <field name="name">overdraft.settlement.allocation.form</field>
+        <field name="model">overdraft.settlement.allocation</field>
+        <field name="arch" type="xml">
+            <form string="Settlement Allocation">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Settlement">
+                            <field name="settlement_id" options="{'no_create': True}"/>
+                            <field name="facility_id" invisible="1"/>
+                            <field name="state" readonly="1"/>
+                        </group>
+                        <group string="Payment">
+                            <field name="payment_id"
+                                   domain="[('overdraft_facility_id', '=', facility_id), ('state', 'in', ['posted', 'paid']), ('settlement_status', 'in', ['pending', 'partial'])]"
+                                   options="{'no_create': True}"/>
+                            <field name="payment_date"/>
+                            <field name="settlement_due_date"/>
+                        </group>
+                    </group>
+
+                    <group>
+                        <group string="Amounts">
+                            <field name="payment_amount" widget="monetary"/>
+                            <field name="payment_outstanding" widget="monetary"/>
+                            <field name="amount" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Settlement Allocation Search View -->
+    <record id="view_overdraft_settlement_allocation_search" model="ir.ui.view">
+        <field name="name">overdraft.settlement.allocation.search</field>
+        <field name="model">overdraft.settlement.allocation</field>
+        <field name="arch" type="xml">
+            <search string="Settlement Allocations">
+                <field name="settlement_id"/>
+                <field name="payment_id"/>
+                <field name="facility_id"/>
+                <separator/>
+                <filter string="Posted" name="posted" domain="[('state', '=', 'posted')]"/>
+                <filter string="Draft" name="draft" domain="[('state', '=', 'draft')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Settlement" name="group_settlement" context="{'group_by': 'settlement_id'}"/>
+                    <filter string="Payment" name="group_payment" context="{'group_by': 'payment_id'}"/>
+                    <filter string="Facility" name="group_facility" context="{'group_by': 'facility_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Settlement Allocation Action -->
+    <record id="action_overdraft_settlement_allocation" model="ir.actions.act_window">
+        <field name="name">Settlement Allocations</field>
+        <field name="res_model">overdraft.settlement.allocation</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+</odoo>

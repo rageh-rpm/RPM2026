@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Interest Rate History List View -->
+    <record id="view_overdraft_interest_rate_history_list" model="ir.ui.view">
+        <field name="name">overdraft.interest.rate.history.list</field>
+        <field name="model">overdraft.interest.rate.history</field>
+        <field name="arch" type="xml">
+            <list string="Interest Rate History" default_order="effective_date desc">
+                <field name="facility_id"/>
+                <field name="effective_date"/>
+                <field name="previous_rate" optional="show"/>
+                <field name="annual_interest_rate"
+                       decoration-success="annual_interest_rate &lt; previous_rate"
+                       decoration-danger="annual_interest_rate &gt; previous_rate"/>
+                <field name="daily_interest_rate"/>
+                <field name="reason"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Interest Rate History Form View -->
+    <record id="view_overdraft_interest_rate_history_form" model="ir.ui.view">
+        <field name="name">overdraft.interest.rate.history.form</field>
+        <field name="model">overdraft.interest.rate.history</field>
+        <field name="arch" type="xml">
+            <form string="Interest Rate Change">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="Rate Change Details">
+                            <field name="facility_id" options="{'no_create': True}"/>
+                            <field name="effective_date"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                        <group string="Interest Rates">
+                            <field name="previous_rate" readonly="1"/>
+                            <field name="annual_interest_rate"/>
+                            <field name="daily_interest_rate" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <group string="Change Reason">
+                        <field name="reason" nolabel="1" placeholder="Explain why the interest rate was changed..."/>
+                    </group>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Interest Rate History Search View -->
+    <record id="view_overdraft_interest_rate_history_search" model="ir.ui.view">
+        <field name="name">overdraft.interest.rate.history.search</field>
+        <field name="model">overdraft.interest.rate.history</field>
+        <field name="arch" type="xml">
+            <search string="Interest Rate History">
+                <field name="facility_id"/>
+                <field name="effective_date"/>
+                <separator/>
+                <filter string="This Year" name="this_year"
+                        domain="[('effective_date', '&gt;=', (context_today().replace(month=1, day=1)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Rate Increase" name="rate_increase"
+                        domain="[('annual_interest_rate', '&gt;', 'previous_rate')]"/>
+                <filter string="Rate Decrease" name="rate_decrease"
+                        domain="[('annual_interest_rate', '&lt;', 'previous_rate')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Facility" name="group_facility" context="{'group_by': 'facility_id'}"/>
+                    <filter string="Effective Date" name="group_date" context="{'group_by': 'effective_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Interest Rate History Action -->
+    <record id="action_overdraft_interest_rate_history" model="ir.actions.act_window">
+        <field name="name">Interest Rate History</field>
+        <field name="res_model">overdraft.interest.rate.history</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No rate changes yet
+            </p>
+            <p>
+                Interest rate changes are tracked here for audit purposes.
+            </p>
+        </field>
+    </record>
+
+</odoo>

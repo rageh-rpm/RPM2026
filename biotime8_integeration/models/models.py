@@ -50,3 +50,54 @@ class BioIntegeration(models.Model):
             }
             response = requests.get(url, headers=headers)
             print(response.text)
+
+
+
+class BiotimePunch(models.Model):
+    _name = "biotime.punch"
+    _description = "BioTime Raw Punch"
+    _order = "punch_time desc"
+
+    # Technical / identification fields
+    name = fields.Char(string="Punch Reference", readonly=True)
+    emp_code = fields.Char(string="Employee Code", index=True, required=True)
+
+    # HR linkage
+    employee_id = fields.Many2one(
+        'hr.employee',
+        string='Employee',
+        ondelete='cascade',
+        index=True,
+        help="Linked Odoo employee for this punch."
+    )
+
+    # Biotime payload fields
+    first_name = fields.Char(string="First Name")
+    last_name = fields.Char(string="Last Name")
+    department = fields.Char(string="Department (Biotime)")
+    punch_time = fields.Datetime(string="Punch Time", required=True, index=True)
+    punch_state_display = fields.Char(string="Punch State")
+    verify_type_display = fields.Char(string="Verification Type")
+    terminal_alias = fields.Char(string="Terminal Alias")
+
+    # Optional raw JSON if you want to debug/trace Biotime payloads
+    raw_payload = fields.Json(string="Raw Payload", help="Original JSON from Biotime, for debugging.")
+
+    _sql_constraints = [
+        # Prevent duplicate punches from being stored twice
+        (
+            'biotime_punch_unique',
+            'unique(emp_code, punch_time, terminal_alias)',
+            'Biotime punch already exists for this employee, time, and terminal!'
+        ),
+    ]
+
+    def name_get(self):
+        """User-friendly display name."""
+        result = []
+        for rec in self:
+            label = rec.punch_time and rec.punch_time.strftime('%Y-%m-%d %H:%M:%S') or 'Unknown'
+            if rec.emp_code:
+                label = f"{rec.emp_code} - {label}"
+            result.append((rec.id, label))
+        return result
