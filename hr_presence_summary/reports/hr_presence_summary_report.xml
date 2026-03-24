@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Standard List Report -->
+    <record id="action_report_presence_summary" model="ir.actions.report">
+        <field name="name">Daily Presence Summary</field>
+        <field name="model">hr.presence.summary</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hr_presence_summary.report_presence_summary_template</field>
+        <field name="report_file">hr_presence_summary.report_presence_summary_template</field>
+        <field name="print_report_name">'Presence_Summary_%s' % (object.date)</field>
+        <field name="binding_model_id" ref="model_hr_presence_summary"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_presence_summary_template">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <h2 class="text-center">Daily Presence Summary</h2>
+                    <table class="table table-sm table-reports">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Employee</th>
+                                <th>Department</th>
+                                <th>Status / Type</th>
+                                <th>Duration</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="docs.sorted(key=lambda x: (x.date, x.employee_id.name))" t-as="o">
+                                <tr>
+                                    <td><span t-field="o.date"/></td>
+                                    <td><span t-field="o.employee_id"/></td>
+                                    <td><span t-field="o.department_id"/></td>
+                                    <td>
+                                        <span t-field="o.presence_type"/>
+                                        <t t-if="o.leave_type_id">
+                                            (<span t-field="o.leave_type_id"/>)
+                                        </t>
+                                    </td>
+                                    <td><span t-field="o.duration_display"/></td>
+                                    <td><span t-field="o.description"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- Accumulated Summary Report -->
+    <record id="action_report_presence_summary_accumulated" model="ir.actions.report">
+        <field name="name">Accumulated Presence Summary</field>
+        <field name="model">hr.presence.summary</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hr_presence_summary.report_accumulated_summary_template</field>
+        <field name="report_file">hr_presence_summary.report_accumulated_summary_template</field>
+        <field name="print_report_name">'Accumulated_Summary_%s' % (context_today().strftime('%Y-%m-%d'))</field>
+        <field name="binding_model_id" ref="model_hr_presence_summary"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <template id="report_accumulated_summary_template">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <h2 class="text-center">Accumulated Presence Summary</h2>
+                    <br/>
+                    
+                    <t t-set="dates" t-value="docs.mapped('date')"/>
+                    <t t-foreach="sorted(list(set(dates)))" t-as="report_date">
+                        <div class="bg-light p-2 mb-2">
+                            <h3 class="m-0"><span t-esc="report_date"/></h3>
+                        </div>
+                        
+                        <t t-set="date_docs" t-value="docs.filtered(lambda x: x.date == report_date)"/>
+                        <t t-set="departments" t-value="date_docs.mapped('department_id')"/>
+                        
+                        <t t-foreach="departments" t-as="dept">
+                            <div class="mt-3 mb-1">
+                                <strong>Department: <span t-esc="dept.name or 'No Department'"/></strong>
+                            </div>
+                            
+                            <table class="table table-sm table-bordered mb-4">
+                                <thead class="thead-light">
+                                    <tr>
+                                        <th style="width: 30%">Employee</th>
+                                        <th style="width: 25%">Status / Type</th>
+                                        <th style="width: 15%">Duration</th>
+                                        <th style="width: 30%">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="dept_docs" t-value="date_docs.filtered(lambda x: x.department_id == dept)"/>
+                                    <t t-foreach="dept_docs.sorted(key=lambda x: x.employee_id.name)" t-as="o">
+                                        <tr>
+                                            <td><span t-field="o.employee_id"/></td>
+                                            <td>
+                                                <span t-field="o.presence_type"/>
+                                                <t t-if="o.leave_type_id">
+                                                    (<span t-field="o.leave_type_id"/>)
+                                                </t>
+                                            </td>
+                                            <td><span t-field="o.duration_display"/></td>
+                                            <td><span t-field="o.description"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+    <record id="paperformat_presence_matrix" model="report.paperformat">
+        <field name="name">Presence Matrix Landscape</field>
+        <field name="default" eval="True"/>
+        <field name="format">A4</field>
+        <field name="page_height">0</field>
+        <field name="page_width">0</field>
+        <field name="orientation">Landscape</field>
+        <field name="margin_top">10</field>
+        <field name="margin_bottom">10</field>
+        <field name="margin_left">10</field>
+        <field name="margin_right">10</field>
+        <field name="header_line" eval="False"/>
+        <field name="header_spacing">0</field>
+        <field name="dpi">90</field>
+    </record>
+
+    <!-- Presence Matrix Report -->
+    <record id="action_report_presence_matrix" model="ir.actions.report">
+        <field name="name">Monthly Presence Matrix</field>
+        <field name="model">hr.presence.summary</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">hr_presence_summary.report_presence_matrix_template</field>
+        <field name="report_file">hr_presence_summary.report_presence_matrix_template</field>
+        <field name="print_report_name">'Presence_Matrix_%s' % (context_today().strftime('%Y-%m-%d'))</field>
+        <field name="binding_model_id" ref="model_hr_presence_summary"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="hr_presence_summary.paperformat_presence_matrix"/>
+    </record>
+
+    <template id="report_presence_matrix_template">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <style>
+                    .table-matrix th, .table-matrix td {
+                        font-size: 8px;
+                        padding: 2px !important;
+                        text-align: center;
+                        border: 1px solid #dee2e6;
+                        height: 20px;
+                    }
+                    .day-header { width: 22px; background-color: #f8f9fa; }
+                    .emp-column { width: 140px; text-align: left !important; padding-left: 5px !important; }
+                    .weekend-cell { background-color: #f1f1f1; }
+                    .status-cell { font-weight: bold; }
+                    .holiday-cell { background-color: #fff3cd !important; color: #856404 !important; }
+                    
+                    /* Status Colors */
+                    .status-a { background-color: #d4edda !important; color: #155724 !important; }
+                    .status-l { background-color: #cce5ff !important; color: #004085 !important; }
+                    .status-m { background-color: #e2e3e5 !important; color: #383d41 !important; }
+                    .status-h { background-color: #fff3cd !important; color: #856404 !important; }
+                    .status-w { background-color: #f1f1f1 !important; color: #6c757d !important; }
+                    .status-x { background-color: #f8d7da !important; color: #721c24 !important; }
+                </style>
+                <div class="page">
+                    <h2 class="text-center">Monthly Presence Matrix</h2>
+                    <br/>
+                    
+                    <table class="table table-sm table-matrix table-bordered">
+                        <thead>
+                            <tr>
+                                <th class="emp-column">Employee</th>
+                                <t t-foreach="dates" t-as="d">
+                                    <th t-attf-class="day-header #{'weekend-cell' if d.weekday() >= 5 else ''}">
+                                        <span t-esc="d.strftime('%d')"/><br/>
+                                        <span style="font-size: 6px;" t-esc="d.strftime('%a')"/>
+                                    </th>
+                                </t>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="matrix_data" t-as="row">
+                                <tr>
+                                    <td class="emp-column">
+                                        <span t-esc="row['employee'].name"/>
+                                        <div style="font-size: 7px; color: #666;">
+                                            <span t-esc="row['employee'].department_id.name"/>
+                                        </div>
+                                    </td>
+                                    <t t-foreach="dates" t-as="d">
+                                        <t t-set="status" t-value="row['status_by_date'].get(d, '')"/>
+                                        <td t-attf-class="status-cell #{'weekend-cell' if d.weekday() >= 5 else ''} #{'status-a' if 'A' in status else ''} #{'status-l' if 'L' in status else ''} #{'status-m' if 'M' in status else ''} #{'status-h' if 'H' in status or 'H' in status else ''} #{'status-x' if 'X' in status else ''}">
+                                            <span t-esc="status"/>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+                    
+                    <div class="mt-4" style="font-size: 9px;">
+                        <strong>Legend:</strong>
+                        <span class="ml-3 status-a p-1">A: Attendance</span>
+                        <span class="ml-3 status-l p-1">L: Leave</span>
+                        <span class="ml-3 status-m p-1">M: Mission</span>
+                        <span class="ml-3 status-h p-1">H: Holiday</span>
+                        <span class="ml-3 status-w p-1">W: Weekend</span>
+                        <span class="ml-3 status-x p-1">X: Absence</span>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

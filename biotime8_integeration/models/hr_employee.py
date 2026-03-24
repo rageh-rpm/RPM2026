@@ -173,7 +173,9 @@ class Employee(models.Model):
             # Step 4: Parse JSON safely
             try:
                 list_url = response.json()
+                print(list_url)
                 punches = list_url.get("data", [])
+                print(punches)
             except Exception as e:
                 raise UserError(f"Invalid response format from Biotime: {str(e)}")
 
@@ -263,6 +265,7 @@ class Employee(models.Model):
                             })
 
                     elif len(punches) > 1:
+                        print(punches)
                         first_punch_time = punches[0]
                         last_punch_time = punches[-1]
                         if is_night_shift_day:

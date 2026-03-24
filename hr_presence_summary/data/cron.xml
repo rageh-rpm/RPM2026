@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_generate_presence_summaries" model="ir.cron">
+        <field name="name">HR Presence: Nightly Summary Generation</field>
+        <field name="model_id" ref="model_hr_presence_summary"/>
+        <field name="state">code</field>
+        <field name="code">
+model.action_generate_summaries(
+    datetime.date.today() - datetime.timedelta(days=1), 
+    datetime.date.today() - datetime.timedelta(days=1)
+)
+        </field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active" eval="True"/>
+    </record>
+</odoo>

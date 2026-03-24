@@ -49,8 +49,5 @@ class ResCompany(models.Model):
 
     # Timezone Configuration
     timezone = fields.Selection(_tz_get, string='Timezone')
-    #     string='Company Timezone',
-    #     required=True,
-    #     help='Timezone used for attendance and shift calculations'
-    # )
+
 
